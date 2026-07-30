@@ -23,7 +23,7 @@
     --hold:#E8A317;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);}
+  html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);max-width:100%;overflow-x:hidden;}
   header{background:var(--panel);border-bottom:3px solid var(--brand);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
   header h1{margin:0;font-size:19px;letter-spacing:0.5px;}
   header .sub{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
@@ -40,7 +40,7 @@
   nav.tabs button:hover{color:var(--text);}
   nav.tabs button.active{color:var(--text);border-bottom-color:var(--brand-light);}
   main{padding:22px;max-width:1500px;margin:0 auto;}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px;margin-bottom:18px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px;margin-bottom:18px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .card h2{margin:0 0 14px 0;font-size:15px;color:var(--text);text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--brand);padding-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
   .card h2 .count{font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0;}
   .collapsible h2{cursor:pointer;user-select:none;}
@@ -98,7 +98,7 @@
   .scope-row label{flex:1;}
   .scope-row .rate{color:var(--muted);font-size:11px;white-space:nowrap;}
   .scope-row input{width:80px;padding:5px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;color:var(--text);}
-  .estimate-line{display:grid;grid-template-columns:1fr 90px 110px 110px 32px;gap:10px;padding:7px 8px;align-items:center;border-bottom:1px solid var(--line);}
+  .estimate-line{display:grid;grid-template-columns:1fr 100px 120px 120px 32px;gap:10px;padding:7px 8px;align-items:center;border-bottom:1px solid var(--line);}
   .estimate-line input{padding:6px;border:1px solid var(--line);border-radius:4px;font-size:13px;background:var(--panel-2);color:var(--text);}
   .estimate-line .total-cell{text-align:right;font-weight:bold;}
   .estimate-line button{background:transparent;color:var(--muted);border:none;cursor:pointer;font-size:17px;}
@@ -135,11 +135,26 @@
   .modal-header{background:var(--brand);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;}
   .modal-header h3{margin:0;font-size:15px;}
   .modal-close{background:transparent;color:#fff;border:none;font-size:22px;cursor:pointer;line-height:1;}
-  .modal-body{padding:18px;}
+  .modal-body{padding:18px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .modal-footer{padding:12px 18px;background:var(--panel-2);display:flex;justify-content:flex-end;gap:8px;}
   #authOverlay{position:fixed;inset:0;background:var(--bg);z-index:2000;display:none;align-items:center;justify-content:center;}
   #authOverlay .box{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--brand);padding:28px;border-radius:6px;width:340px;}
   #authErr{color:var(--alert);font-size:12px;margin-top:8px;min-height:16px;}
+  @media (max-width:768px){
+    input,select,textarea{font-size:16px !important;} /* stops iOS auto-zoom that stretches the page */
+    main{padding:12px;}
+    header{padding:10px 12px;}
+    nav.tabs{padding:0 8px;}
+    nav.tabs button{padding:10px 10px;font-size:12px;}
+    .gsearch{margin-left:0;width:100%;padding:6px 4px;}
+    .gsearch input{min-width:0;flex:1;}
+    .card{padding:12px;}
+    .form-group{flex:1 1 100%;}
+    .summary-grid{grid-template-columns:repeat(2,1fr);}
+    .estimate-line{grid-template-columns:minmax(150px,1fr) 84px 100px 100px 28px;min-width:480px;}
+    table{min-width:560px;} /* tables scroll inside their card instead of stretching the page */
+    .totals-box{max-width:none;}
+  }
   @media print{
     body{background:#fff;color:#000;}
     header,nav.tabs,.toolbar,button,.no-print{display:none !important;}
@@ -331,7 +346,7 @@ async function initBackend(){
       document.getElementById('authOverlay').style.display='none';
       document.getElementById('logoutBtn').style.display='';
       document.getElementById('userEmailLbl').textContent=user.email||'';
-      COLLS.forEach(c=>FB.db.collection(c).onSnapshot(snap=>{STATE[c]=snap.docs.map(d=>d.data());lsSave();render();},fbErr));
+      COLLS.forEach(c=>FB.db.collection(c).onSnapshot(snap=>{STATE[c]=snap.docs.map(d=>d.data());lsSave();safeRender();},fbErr));
       FB.db.collection('rates').get().then(s=>{if(s.empty)seedDefaults();}).catch(()=>{});
     });
   }catch(e){console.error(e);alert('Firebase failed to load — running in LOCAL MODE.\n'+e.message);FB=null;lsLoad();render();}
@@ -362,6 +377,12 @@ function computeFlags(){
 
 /* ---------------- rendering ---------------- */
 const VIEWS={};const POST={};
+/* Never redraw the screen while the user is typing — cloud sync echoes
+   wait until focus leaves the field, then apply. Fixes cursor loss. */
+let PENDING_RENDER=false;
+function isTyping(){const a=document.activeElement;return !!a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA');}
+function safeRender(){if(isTyping()){PENDING_RENDER=true;return;}render();}
+document.addEventListener('focusout',()=>{setTimeout(()=>{if(PENDING_RENDER&&!isTyping()){PENDING_RENDER=false;render();}},180);});
 function showView(name,btn){CURRENT_VIEW=name;document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));(btn||document.querySelector(`nav.tabs button[data-view="${name}"]`))?.classList.add('active');render();}
 function render(){const fn=VIEWS[CURRENT_VIEW];document.getElementById('main').innerHTML=fn?fn():'';if(POST[CURRENT_VIEW])POST[CURRENT_VIEW]();}
 function openModal(t,b,f){document.getElementById('modalTitle').textContent=t;document.getElementById('modalBody').innerHTML=b;document.getElementById('modalFooter').innerHTML=f||'';document.getElementById('modal').classList.add('open');}
