@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Visionary Advancement CRM</title>
 <meta name="theme-color" content="#1F4E78">
-<link rel="manifest" id="manifestLink">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <style>
   :root{
     --brand:#1F4E78;            /* {{BRAND_COLOR}} — VA identity */
@@ -663,11 +665,11 @@ function importData(ev){
 }
 function applyImport(){const plan=window._importPlan;if(!plan)return;COLLS.forEach(c=>{(plan[c].fresh||[]).forEach(d=>createDoc(c,d));});window._importPlan=null;closeModal();render();alert('Import complete.');}
 
-/* ---------------- PWA (passthrough — zero caching) ---------------- */
+/* ---------------- PWA (passthrough — zero caching) ----------------
+   Requires manifest.json, sw.js, icon-192.png, icon-512.png alongside
+   this file in the repo. */
 try{
-  const manifest={name:'Visionary Advancement CRM',short_name:'VA CRM',start_url:'.',display:'standalone',background_color:'#0A0A0A',theme_color:'#1F4E78'};
-  document.getElementById('manifestLink').href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest));
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{/* sw.js optional until deploy */});
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{/* sw.js optional until deployed */});
 }catch(e){/* non-fatal */}
 
 initBackend();
