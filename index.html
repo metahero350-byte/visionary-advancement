@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visionary Advancement CRM</title>
+<meta name="theme-color" content="#1F4E78">
+<link rel="manifest" id="manifestLink">
+<style>
+  :root{
+    --brand:#1F4E78;            /* {{BRAND_COLOR}} — VA identity */
+    --brand-light:#2E6CA4;
+    --alert:#E50914;            /* {{ALERT_COLOR}} — overdue/urgent ONLY */
+    --bg:#0A0A0A;
+    --panel:#141414;
+    --panel-2:#1E1E1E;
+    --line:#2C2C2C;
+    --text:#E0E0E0;
+    --muted:#8A8A8A;
+    --ok:#3FA34D;
+    --hold:#E8A317;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--panel);border-bottom:3px solid var(--brand);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  header h1{margin:0;font-size:19px;letter-spacing:0.5px;}
+  header .sub{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+  .mode-pill{display:inline-block;font-size:10px;font-weight:bold;letter-spacing:1px;padding:3px 8px;border-radius:3px;border:1px solid var(--hold);color:var(--hold);margin-left:10px;vertical-align:middle;}
+  .mode-pill.live{border-color:var(--ok);color:var(--ok);}
+  nav.tabs{background:var(--panel-2);padding:0 22px;display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line);}
+  nav.tabs button{background:transparent;color:var(--muted);border:none;padding:12px 16px;cursor:pointer;font-size:13px;font-weight:bold;border-bottom:3px solid transparent;text-transform:uppercase;letter-spacing:0.5px;}
+  nav.tabs button:hover{color:var(--text);}
+  nav.tabs button.active{color:var(--text);border-bottom-color:var(--brand-light);}
+  main{padding:22px;max-width:1500px;margin:0 auto;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px;margin-bottom:18px;}
+  .card h2{margin:0 0 14px 0;font-size:15px;color:var(--text);text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--brand);padding-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+  .card h2 .count{font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0;}
+  .collapsible h2{cursor:pointer;user-select:none;}
+  .collapsible h2::after{content:'\25BE';font-size:12px;color:var(--muted);}
+  .collapsible.closed h2::after{content:'\25B8';}
+  .collapsible.closed .card-body{display:none;}
+  table{width:100%;border-collapse:collapse;}
+  th{background:var(--brand);color:#fff;padding:9px 8px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;}
+  td{padding:8px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+  tr:hover td{background:var(--panel-2);}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  td.center,th.center{text-align:center;}
+  button.btn{background:var(--brand);color:#fff;border:none;padding:8px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;}
+  button.btn:hover{background:var(--brand-light);}
+  button.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--line);}
+  button.btn-secondary:hover{border-color:var(--brand-light);color:#fff;}
+  button.btn-small{padding:4px 9px;font-size:11px;}
+  .form-row{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;}
+  .form-group{flex:1 1 190px;min-width:0;}
+  .form-group label{display:block;font-size:11px;font-weight:bold;color:var(--brand-light);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;}
+  .form-group input,.form-group select,.form-group textarea{width:100%;padding:8px;border:1px solid var(--line);border-radius:4px;font-size:13px;font-family:inherit;background:var(--panel-2);color:var(--text);}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:1px solid var(--brand-light);border-color:var(--brand-light);}
+  .form-group textarea{resize:vertical;min-height:70px;}
+  .toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+  .toolbar input[type="search"],.toolbar select{padding:8px;border:1px solid var(--line);border-radius:4px;min-width:200px;background:var(--panel-2);color:var(--text);}
+  .help-text{font-size:11px;color:var(--muted);margin-top:4px;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:3px;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:0.5px;border:1px solid;}
+  .st-Bidding{color:#9AB7D8;border-color:#9AB7D8;}
+  .st-Awarded{color:var(--hold);border-color:var(--hold);}
+  .st-InProgress{color:var(--brand-light);border-color:var(--brand-light);}
+  .st-Closeout{color:#B07BD0;border-color:#B07BD0;}
+  .st-Complete{color:var(--ok);border-color:var(--ok);}
+  .st-OnHold{color:var(--muted);border-color:var(--muted);}
+  .st-Lost{color:#777;border-color:#555;text-decoration:line-through;}
+  .sub-NotStarted{color:var(--muted);border-color:var(--muted);}
+  .sub-InPrep{color:#9AB7D8;border-color:#9AB7D8;}
+  .sub-Submitted{color:var(--brand-light);border-color:var(--brand-light);}
+  .sub-Revise{color:var(--hold);border-color:var(--hold);}
+  .sub-ApprovedasNoted{color:var(--ok);border-color:var(--ok);}
+  .sub-Approved{color:var(--ok);border-color:var(--ok);background:rgba(63,163,77,0.12);}
+  .pay-Paid{color:var(--ok);border-color:var(--ok);}
+  .pay-Partial{color:#9AB7D8;border-color:#9AB7D8;}
+  .pay-Unpaid{color:var(--hold);border-color:var(--hold);}
+  .est-Draft{color:var(--muted);border-color:var(--muted);}
+  .est-Sent{color:var(--brand-light);border-color:var(--brand-light);}
+  .est-Approved{color:var(--ok);border-color:var(--ok);}
+  .est-Declined{color:#777;border-color:#555;text-decoration:line-through;}
+  .est-Revised{color:var(--hold);border-color:var(--hold);}
+  .money-out{color:var(--hold);font-weight:bold;}
+  .money-ok{color:var(--ok);font-weight:bold;}
+  .tabs-mini{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:12px;flex-wrap:wrap;}
+  .tabs-mini button{background:transparent;border:none;padding:9px 14px;cursor:pointer;font-weight:bold;font-size:12px;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px;}
+  .tabs-mini button.active{color:var(--text);border-bottom-color:var(--brand-light);}
+  .scope-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px;}
+  .scope-row label{flex:1;}
+  .scope-row .rate{color:var(--muted);font-size:11px;white-space:nowrap;}
+  .scope-row input{width:80px;padding:5px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;color:var(--text);}
+  .estimate-line{display:grid;grid-template-columns:1fr 90px 110px 110px 32px;gap:10px;padding:7px 8px;align-items:center;border-bottom:1px solid var(--line);}
+  .estimate-line input{padding:6px;border:1px solid var(--line);border-radius:4px;font-size:13px;background:var(--panel-2);color:var(--text);}
+  .estimate-line .total-cell{text-align:right;font-weight:bold;}
+  .estimate-line button{background:transparent;color:var(--muted);border:none;cursor:pointer;font-size:17px;}
+  .estimate-line button:hover{color:#fff;}
+  .totals-box{background:var(--panel-2);padding:14px;border-radius:6px;margin-top:12px;max-width:420px;margin-left:auto;}
+  .totals-row{display:flex;justify-content:space-between;padding:4px 0;font-size:14px;}
+  .totals-row.grand{font-size:17px;font-weight:bold;border-top:2px solid var(--brand);margin-top:8px;padding-top:8px;}
+  .rfi-Open{color:var(--hold);border-color:var(--hold);}
+  .rfi-Answered{color:var(--ok);border-color:var(--ok);}
+  .rfi-Void{color:var(--muted);border-color:var(--muted);}
+  .tag{display:inline-block;background:var(--panel-2);border:1px solid var(--brand-light);color:var(--text);padding:2px 8px;border-radius:3px;font-size:11px;margin:2px 3px 2px 0;}
+  .overdue-flag{display:block;padding:9px 12px;margin-bottom:6px;background:var(--panel-2);border-left:4px solid var(--alert);border-radius:0 4px 4px 0;cursor:pointer;font-weight:bold;color:var(--alert);font-size:13px;}
+  .overdue-flag:hover{background:#242424;}
+  .overdue-flag .ctx{display:block;font-weight:normal;color:var(--muted);font-size:11px;margin-top:2px;}
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;}
+  .summary-tile{background:var(--panel-2);border:1px solid var(--line);border-top:3px solid var(--brand);padding:14px;border-radius:4px;}
+  .summary-tile .label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+  .summary-tile .value{font-size:26px;font-weight:bold;margin-top:4px;}
+  .summary-tile.alert{border-top-color:var(--alert);}
+  .summary-tile.alert .value{color:var(--alert);}
+  .board{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+  .board-col{background:var(--panel-2);border-radius:4px;padding:8px;min-height:80px;}
+  .board-col h4{margin:0 0 8px 0;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:5px;}
+  .board-card{background:var(--panel);border:1px solid var(--line);padding:8px;border-radius:4px;margin-bottom:6px;cursor:pointer;font-size:12px;}
+  .board-card:hover{border-color:var(--brand-light);}
+  .board-card .name{font-weight:bold;}
+  .board-card .meta{font-size:10px;color:var(--muted);margin-top:2px;}
+  .note-entry{border-bottom:1px solid var(--line);padding:8px 0;font-size:13px;}
+  .note-entry .stamp{color:var(--brand-light);font-weight:bold;font-size:11px;margin-right:8px;}
+  .empty-state{text-align:center;padding:32px;color:var(--muted);font-style:italic;font-size:13px;}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:1000;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:6px;max-width:760px;width:95%;max-height:90vh;overflow-y:auto;}
+  .modal-header{background:var(--brand);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;}
+  .modal-header h3{margin:0;font-size:15px;}
+  .modal-close{background:transparent;color:#fff;border:none;font-size:22px;cursor:pointer;line-height:1;}
+  .modal-body{padding:18px;}
+  .modal-footer{padding:12px 18px;background:var(--panel-2);display:flex;justify-content:flex-end;gap:8px;}
+  #authOverlay{position:fixed;inset:0;background:var(--bg);z-index:2000;display:none;align-items:center;justify-content:center;}
+  #authOverlay .box{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--brand);padding:28px;border-radius:6px;width:340px;}
+  #authErr{color:var(--alert);font-size:12px;margin-top:8px;min-height:16px;}
+  @media print{
+    body{background:#fff;color:#000;}
+    header,nav.tabs,.toolbar,button,.no-print{display:none !important;}
+    main{padding:0;max-width:none;}
+    .card{border:none;background:#fff;color:#000;page-break-inside:avoid;}
+    .card h2{color:#1F4E78;border-bottom-color:#1F4E78;}
+    th{background:#1F4E78 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    td{color:#000;border-bottom-color:#ccc;}
+    .summary-tile,.board-col,.board-card,.overdue-flag,.note-entry{background:#fff;color:#000;border-color:#ccc;}
+    .overdue-flag{color:#C00;border-left-color:#C00;}
+    .note-entry .stamp{color:#1F4E78;}
+  }
+</style>
+</head>
+<body>
+<div id="authOverlay"><div class="box">
+  <h2 style="margin:0 0 4px 0;font-size:17px;">Visionary Advancement CRM</h2>
+  <div class="help-text" style="margin-bottom:16px;">Sign in to continue</div>
+  <div class="form-group" style="margin-bottom:10px;"><label>Email</label><input id="authEmail" type="email" autocomplete="username"></div>
+  <div class="form-group"><label>Password</label><input id="authPass" type="password" autocomplete="current-password"></div>
+  <div id="authErr"></div>
+  <button class="btn" style="width:100%;margin-top:10px;" onclick="doLogin()">Sign In</button>
+</div></div>
+<header>
+  <div><h1>Visionary Advancement <span id="modePill" class="mode-pill">LOCAL MODE</span></h1><div class="sub">Project Tracking CRM</div></div>
+  <div>
+    <span id="userEmailLbl" class="help-text" style="margin-right:10px;"></span>
+    <button class="btn btn-secondary" onclick="exportData()">Backup</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Import</button>
+    <button class="btn btn-secondary" id="logoutBtn" style="display:none;" onclick="doLogout()">Sign Out</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</header>
+<nav class="tabs">
+  <button data-view="dashboard" class="active" onclick="showView('dashboard',this)">Dashboard</button>
+  <button data-view="projects" onclick="showView('projects',this)">Projects</button>
+  <button data-view="submittals" onclick="showView('submittals',this)">Submittals</button>
+  <button data-view="rfis" onclick="showView('rfis',this)">RFIs</button>
+  <button data-view="estimates" onclick="showView('estimates',this)">Estimates</button>
+  <button data-view="rates" onclick="showView('rates',this)">Rate Card</button>
+  <button data-view="oneoffs" onclick="showView('oneoffs',this)">One-Offs</button>
+  <button data-view="settings" onclick="showView('settings',this)">Settings</button>
+</nav>
+<main id="main"></main>
+<div id="modal" class="modal-backdrop"><div class="modal"><div class="modal-header"><h3 id="modalTitle"></h3><button class="modal-close" onclick="closeModal()">&times;</button></div><div class="modal-body" id="modalBody"></div><div class="modal-footer" id="modalFooter"></div></div></div>
+<script>
+'use strict';
+/* ============================================================
+   Visionary Advancement CRM — {{COMPANY_NAME}} deployment
+   BRAND_COLOR : #1F4E78   ALERT_COLOR : #E50914
+   FIREBASE_PROJECT : (pending — paste config below)
+   GH_PAGES_REPO    : (pending)
+   ------------------------------------------------------------
+   To go live: paste your Firebase web-app config object into
+   FIREBASE_CONFIG below. Until then the app runs in LOCAL MODE
+   (browser localStorage, single device). Firestore becomes the
+   source of truth the moment config is present.
+   At deploy time, add a passthrough sw.js next to this file:
+     self.addEventListener('fetch',e=>e.respondWith(fetch(e.request)));
+   ============================================================ */
+const FIREBASE_CONFIG = null; /* e.g. {apiKey:"...",authDomain:"...",projectId:"...",storageBucket:"...",messagingSenderId:"...",appId:"..."} */
+
+const LS_KEY='va.crm.fw.v1';
+const COLLS=['projects','submittals','rfis','estimates','rates','oneoffs'];
+const PROJECT_STATUSES=['Bidding','Awarded','In Progress','Closeout','Complete','On Hold','Lost'];
+const TERMINAL_PROJECT=['Complete','Lost'];
+const SUB_STAGES=['Product Data','Shop Drawings','Closeouts'];
+const SUB_STATUSES=['Not Started','In Prep','Submitted','Revise & Resubmit','Approved as Noted','Approved'];
+const SUB_TERMINAL=['Approved','Approved as Noted'];
+const RFI_STATUSES=['Open','Answered','Void'];
+const EST_STATUSES=['Draft','Sent','Approved','Declined','Revised'];
+const RATE_SECTIONS=[{key:'architectural',label:'Architectural'},{key:'fire_alarm',label:'Fire Alarm'},{key:'other_systems',label:'Other Systems (Low-Voltage)'},{key:'waterproofing',label:'Waterproofing / Details'}];
+const DEFAULT_RATES=[
+ {id:'rt_arch_01',section:'architectural',desc:'Residential - New Construction',rate:1.25,unit:'$/sq ft'},
+ {id:'rt_arch_02',section:'architectural',desc:'Commercial - Tenant Improvement',rate:2.00,unit:'$/sq ft'},
+ {id:'rt_arch_03',section:'architectural',desc:'Commercial - New Construction',rate:2.50,unit:'$/sq ft'},
+ {id:'rt_arch_04',section:'architectural',desc:'Site Plan / Project Setup (hourly)',rate:20.00,unit:'$/hour'},
+ {id:'rt_arch_05',section:'architectural',desc:'Architectural Floor Plans (hourly)',rate:45.00,unit:'$/hour'},
+ {id:'rt_arch_06',section:'architectural',desc:'Exterior Elevations (hourly)',rate:45.00,unit:'$/hour'},
+ {id:'rt_arch_07',section:'architectural',desc:'Section Details (hourly)',rate:45.00,unit:'$/hour'},
+ {id:'rt_arch_08',section:'architectural',desc:'Electrical Floor & Lighting Plans (hourly)',rate:45.00,unit:'$/hour'},
+ {id:'rt_arch_09',section:'architectural',desc:'Framing & Foundation Plans (hourly)',rate:45.00,unit:'$/hour'},
+ {id:'rt_arch_10',section:'architectural',desc:'Roof Plans (hourly)',rate:45.00,unit:'$/hour'},
+ {id:'rt_arch_11',section:'architectural',desc:'Title 24 Coordination (hourly)',rate:45.00,unit:'$/hour'},
+ {id:'rt_arch_12',section:'architectural',desc:'Revisions (hourly)',rate:45.00,unit:'$/hour'},
+ {id:'rt_fa_01',section:'fire_alarm',desc:'Base Design',rate:510,unit:'flat'},
+ {id:'rt_fa_02',section:'fire_alarm',desc:'Additional Sheets / Floors',rate:105,unit:'each'},
+ {id:'rt_fa_03',section:'fire_alarm',desc:'Additional Initiating Devices (21-100)',rate:5.50,unit:'each'},
+ {id:'rt_fa_04',section:'fire_alarm',desc:'Additional Initiating Devices (101+)',rate:3.50,unit:'each'},
+ {id:'rt_fa_05',section:'fire_alarm',desc:'Additional Notification Appliances',rate:2.00,unit:'each'},
+ {id:'rt_fa_06',section:'fire_alarm',desc:'New / Unfamiliar Panel',rate:275,unit:'min'},
+ {id:'rt_fa_07',section:'fire_alarm',desc:'Expedited Drawings',rate:400,unit:'min'},
+ {id:'rt_fa_08',section:'fire_alarm',desc:'Convert PDF to CAD',rate:200,unit:'per sheet'},
+ {id:'rt_os_01',section:'other_systems',desc:'Base Design',rate:510,unit:'flat'},
+ {id:'rt_os_02',section:'other_systems',desc:'Additional Sheets / Floors',rate:50,unit:'each'},
+ {id:'rt_os_03',section:'other_systems',desc:'Additional Devices (21-100)',rate:2.75,unit:'each'},
+ {id:'rt_os_04',section:'other_systems',desc:'Additional Devices (101+)',rate:1.75,unit:'each'},
+ {id:'rt_os_05',section:'other_systems',desc:'New / Unfamiliar Panel or System',rate:275,unit:'min'},
+ {id:'rt_os_06',section:'other_systems',desc:'Expedited Drawings',rate:400,unit:'min'},
+ {id:'rt_os_07',section:'other_systems',desc:'Convert PDF to CAD',rate:200,unit:'per sheet'},
+ {id:'rt_wp_01',section:'waterproofing',desc:'Update minor changes to detail',rate:22,unit:'each'},
+ {id:'rt_wp_02',section:'waterproofing',desc:'Update medium changes to detail',rate:25,unit:'each'},
+ {id:'rt_wp_03',section:'waterproofing',desc:'New detail design from sketch',rate:36,unit:'each'},
+ {id:'rt_wp_04',section:'waterproofing',desc:'Reproduction of existing detail',rate:36,unit:'each'},
+ {id:'rt_wp_05',section:'waterproofing',desc:'Specification writing',rate:40,unit:'each'}
+];
+const DEFAULT_ONEOFFS=[
+ {id:'oo_01',desc:'Permit submittal coordination',amount:250},
+ {id:'oo_02',desc:'In-person site visit (local)',amount:150},
+ {id:'oo_03',desc:'Plan check response / corrections',amount:175},
+ {id:'oo_04',desc:'PDF to CAD conversion (per sheet)',amount:200},
+ {id:'oo_05',desc:'Expedited drawing fee',amount:400}
+];
+
+let STATE={projects:[],submittals:[],rfis:[],estimates:[],rates:[],oneoffs:[]};
+let FB=null; let CURRENT_VIEW='dashboard'; let SHOW_ARCHIVED=false; let CURRENT_ESTIMATE_ID=null;
+
+function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);}
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function stamp(){const d=new Date();const p=n=>String(n).padStart(2,'0');return `[${p(d.getMonth()+1)}/${p(d.getDate())}/${String(d.getFullYear()).slice(-2)} ${p(d.getHours())}:${p(d.getMinutes())}]`;}
+function fmtDate(s){if(!s)return '';const d=new Date(s+'T00:00:00');return isNaN(d)?s:d.toLocaleDateString('en-US');}
+function fmtMoney(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function escapeAttr(s){return escapeHtml(s);}
+function slug(s){return String(s||'').replace(/[^A-Za-z]/g,'');}
+function parseTags(s){return String(s||'').split(/[\n,]/).map(x=>x.trim()).filter(Boolean);}
+function tagsHtml(arr){return (arr||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')||'<span class="help-text">none</span>';}
+function byId(coll,id){return STATE[coll].find(x=>x.id===id);}
+function projName(id){return byId('projects',id)?.name||'(unassigned)';}
+function active(coll){return STATE[coll].filter(x=>!x.archived);}
+
+/* ---------------- persistence: local mode ---------------- */
+function lsLoad(){try{const raw=localStorage.getItem(LS_KEY);if(raw){const d=JSON.parse(raw);COLLS.forEach(c=>{STATE[c]=Array.isArray(d[c])?d[c]:[];});}}catch(e){/* corrupt backup ignored; STATE stays empty */}}
+function lsSave(){try{localStorage.setItem(LS_KEY,JSON.stringify(STATE));rollingBackup();}catch(e){console.warn('localStorage save failed',e);}}
+function rollingBackup(){try{const k=LS_KEY+'.bak.'+todayISO();localStorage.setItem(k,JSON.stringify(STATE));const cutoff=new Date(Date.now()-30*864e5).toISOString().slice(0,10);for(let i=localStorage.length-1;i>=0;i--){const key=localStorage.key(i);if(key&&key.startsWith(LS_KEY+'.bak.')&&key.slice((LS_KEY+'.bak.').length)<cutoff)localStorage.removeItem(key);}}catch(e){/* quota — backups best-effort */}}
+
+/* ---------------- persistence: unified writes ----------------
+   HARD RULES: creates are additive; updates are TARGETED field
+   patches (never full-document replacement); notes are append-only. */
+function createDoc(coll,doc){doc.created=doc.created||todayISO();STATE[coll].push(doc);if(FB){FB.db.collection(coll).doc(doc.id).set(doc).catch(fbErr);}else{lsSave();}}
+function patchDoc(coll,id,patch){const d=byId(coll,id);if(!d)return;Object.assign(d,patch,{updated:todayISO()});if(FB){FB.db.collection(coll).doc(id).update({...patch,updated:todayISO()}).catch(fbErr);}else{lsSave();}}
+function appendNote(coll,id,text){const d=byId(coll,id);if(!d)return;const note={ts:stamp(),text};if(!Array.isArray(d.notes))d.notes=[];d.notes.push(note);if(FB){FB.db.collection(coll).doc(id).update({notes:firebase.firestore.FieldValue.arrayUnion(note)}).catch(fbErr);}else{lsSave();}}
+function fbErr(e){console.error(e);alert('Cloud write failed: '+e.message+'\nChange is held locally — retry or check connection.');}
+function seedDefaults(){ /* idempotent — stable IDs, only fills empty collections */
+  if(STATE.rates.length===0)DEFAULT_RATES.forEach(r=>createDoc('rates',{...r,archived:false}));
+  if(STATE.oneoffs.length===0)DEFAULT_ONEOFFS.forEach(o=>createDoc('oneoffs',{...o,archived:false}));
+}
+
+/* ---------------- estimate financials ---------------- */
+function estSubtotal(e){return (e.lineItems||[]).reduce((a,l)=>a+(Number(l.qty)||0)*(Number(l.rate)||0),0);}
+function estTotal(e){return estSubtotal(e)-(Number(e.savings)||0);}
+function paidAmount(e){return (e.payments||[]).filter(p=>!p.void).reduce((a,p)=>a+(Number(p.amount)||0),0);}
+function balanceOf(e){return estTotal(e)-paidAmount(e);}
+function payStatus(e){const t=estTotal(e),p=paidAmount(e);if(p<=0)return 'Unpaid';return p+0.005>=t?'Paid':'Partial';}
+function payBadge(e){const s=payStatus(e);return `<span class="badge pay-${s}">${s}</span>`;}
+function estBadge(s){return `<span class="badge est-${slug(s)}">${escapeHtml(s||'Draft')}</span>`;}
+function projectFinancials(projectId){const ests=active('estimates').filter(e=>e.projectId===projectId&&e.status!=='Declined');const total=ests.reduce((a,e)=>a+estTotal(e),0);const paid=ests.reduce((a,e)=>a+paidAmount(e),0);return {count:ests.length,total,paid,balance:total-paid};}
+function nextEstNumber(){const ymd=todayISO().replace(/-/g,'');const n=STATE.estimates.filter(e=>(e.number||'').startsWith(ymd)).length;return `${ymd}-${n+1}`;}
+
+/* ---------------- Firebase bootstrap (stub-ready) ---------------- */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+async function initBackend(){
+  if(!FIREBASE_CONFIG){lsLoad();seedDefaults();render();return;}
+  const v='10.12.2';
+  try{
+    await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
+    await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-auth-compat.js`);
+    await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore-compat.js`);
+    const app=firebase.initializeApp(FIREBASE_CONFIG);
+    FB={app,auth:firebase.auth(),db:firebase.firestore()};
+    document.getElementById('modePill').textContent='LIVE';
+    document.getElementById('modePill').classList.add('live');
+    FB.auth.onAuthStateChanged(user=>{
+      if(!user){document.getElementById('authOverlay').style.display='flex';return;}
+      document.getElementById('authOverlay').style.display='none';
+      document.getElementById('logoutBtn').style.display='';
+      document.getElementById('userEmailLbl').textContent=user.email||'';
+      COLLS.forEach(c=>FB.db.collection(c).onSnapshot(snap=>{STATE[c]=snap.docs.map(d=>d.data());lsSave();render();},fbErr));
+      FB.db.collection('rates').get().then(s=>{if(s.empty)seedDefaults();}).catch(()=>{});
+    });
+  }catch(e){console.error(e);alert('Firebase failed to load — running in LOCAL MODE.\n'+e.message);FB=null;lsLoad();render();}
+}
+function doLogin(){if(!FB)return;const em=document.getElementById('authEmail').value.trim();const pw=document.getElementById('authPass').value;FB.auth.signInWithEmailAndPassword(em,pw).catch(e=>{document.getElementById('authErr').textContent=e.message;});}
+function doLogout(){if(FB)FB.auth.signOut();}
+
+/* ---------------- overdue flag engine (§5) ---------------- */
+function computeFlags(){
+  const t=todayISO();const flags=[];
+  active('submittals').forEach(s=>{
+    if(s.dueDate&&s.dueDate<t&&!SUB_TERMINAL.includes(s.status))
+      flags.push({kind:'Submittal',due:s.dueDate,label:`${s.stage} — ${s.specSection||'(no section)'} ${s.status==='Revise & Resubmit'?'(R&R)':'not approved'}`,ctx:projName(s.projectId),open:`editSubmittal('${s.id}')`});
+  });
+  active('rfis').forEach(r=>{
+    if(r.dateNeeded&&r.dateNeeded<t&&r.status==='Open')
+      flags.push({kind:'RFI',due:r.dateNeeded,label:`RFI ${r.number||''} — ${r.subject||'(no subject)'} still open`,ctx:projName(r.projectId),open:`editRfi('${r.id}')`});
+  });
+  active('projects').forEach(p=>{
+    if(p.ntpDate&&p.ntpDate<t&&['Bidding','Awarded'].includes(p.status))
+      flags.push({kind:'NTP',due:p.ntpDate,label:`NTP date passed — project not started`,ctx:p.name,open:`editProject('${p.id}')`});
+    if(p.completionDate&&p.completionDate<t&&!TERMINAL_PROJECT.includes(p.status)&&p.status!=='Closeout')
+      flags.push({kind:'Completion',due:p.completionDate,label:`Contract completion date passed — status: ${p.status}`,ctx:p.name,open:`editProject('${p.id}')`});
+  });
+  flags.sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+  return flags;
+}
+
+/* ---------------- rendering ---------------- */
+const VIEWS={};const POST={};
+function showView(name,btn){CURRENT_VIEW=name;document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));(btn||document.querySelector(`nav.tabs button[data-view="${name}"]`))?.classList.add('active');render();}
+function render(){const fn=VIEWS[CURRENT_VIEW];document.getElementById('main').innerHTML=fn?fn():'';if(POST[CURRENT_VIEW])POST[CURRENT_VIEW]();}
+function openModal(t,b,f){document.getElementById('modalTitle').textContent=t;document.getElementById('modalBody').innerHTML=b;document.getElementById('modalFooter').innerHTML=f||'';document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function toggleCard(el){el.closest('.collapsible').classList.toggle('closed');}
+function statusBadge(s){return `<span class="badge st-${slug(s)}">${escapeHtml(s||'Bidding')}</span>`;}
+function subBadge(s){return `<span class="badge sub-${slug(s)}">${escapeHtml(s||'Not Started')}</span>`;}
+function rfiBadge(s){return `<span class="badge rfi-${slug(s)}">${escapeHtml(s||'Open')}</span>`;}
+function notesBlock(coll,id){const d=byId(coll,id);const notes=(d?.notes||[]).slice().sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));return `
+  <h3 style="margin:16px 0 6px 0;font-size:13px;color:var(--brand-light);text-transform:uppercase;">General Notes</h3>
+  <div class="form-row"><div class="form-group" style="flex:3;"><textarea id="newNote_${id}" placeholder="Add a note — stamped and permanent once saved"></textarea></div>
+  <div class="form-group" style="flex:0 0 auto;align-self:flex-end;"><button class="btn" onclick="saveNote('${coll}','${id}')">Add Note</button></div></div>
+  <div id="noteList_${id}">${notes.length===0?'<div class="help-text">No notes yet.</div>':notes.map(n=>`<div class="note-entry"><span class="stamp">${escapeHtml(n.ts)}</span>${escapeHtml(n.text)}</div>`).join('')}</div>`;}
+function saveNote(coll,id){const el=document.getElementById('newNote_'+id);const text=(el?.value||'').trim();if(!text){alert('Note is empty.');return;}appendNote(coll,id,text);const map={projects:'editProject',submittals:'editSubmittal',rfis:'editRfi'};window[map[coll]](id);}
+
+/* ---------------- dashboard ---------------- */
+VIEWS.dashboard=()=>{
+  const flags=computeFlags();
+  const projs=active('projects');
+  const open=projs.filter(p=>!TERMINAL_PROJECT.includes(p.status));
+  const openSubs=active('submittals').filter(s=>!SUB_TERMINAL.includes(s.status??'Not Started'));
+  const openRfis=active('rfis').filter(r=>r.status==='Open');
+  return `
+  <div class="card"><h2>Dashboard</h2>
+    <div class="summary-grid">
+      <div class="summary-tile"><div class="label">Open Projects</div><div class="value">${open.length}</div></div>
+      <div class="summary-tile"><div class="label">Open Submittals</div><div class="value">${openSubs.length}</div></div>
+      <div class="summary-tile"><div class="label">Open RFIs</div><div class="value">${openRfis.length}</div></div>
+      <div class="summary-tile ${flags.length?'alert':''}"><div class="label">Overdue Flags</div><div class="value">${flags.length}</div></div>
+      <div class="summary-tile"><div class="label">Estimated Value</div><div class="value">${fmtMoney(active('estimates').filter(e=>e.status!=='Declined').reduce((a,e)=>a+estTotal(e),0))}</div></div>
+      <div class="summary-tile"><div class="label">Balance Paid</div><div class="value money-ok">${fmtMoney(active('estimates').reduce((a,e)=>a+paidAmount(e),0))}</div></div>
+      <div class="summary-tile"><div class="label">Outstanding</div><div class="value money-out">${fmtMoney(active('estimates').filter(e=>e.status!=='Declined').reduce((a,e)=>a+Math.max(0,balanceOf(e)),0))}</div></div>
+    </div>
+  </div>
+  <div class="card collapsible"><h2 onclick="toggleCard(this)">What's Next <span class="count">${flags.length} flagged</span></h2><div class="card-body">
+    ${flags.length===0?'<div class="empty-state">Nothing overdue. All dated milestones are on track or closed.</div>':flags.map(f=>`<a class="overdue-flag" onclick="${f.open}"><span>&#9888; ${escapeHtml(f.kind)} overdue since ${fmtDate(f.due)} — ${escapeHtml(f.label)}</span><span class="ctx">${escapeHtml(f.ctx)}</span></a>`).join('')}
+  </div></div>
+  <div class="card collapsible"><h2 onclick="toggleCard(this)">Project Board</h2><div class="card-body">
+    <div class="board">${PROJECT_STATUSES.map(s=>{const list=projs.filter(p=>p.status===s);return `<div class="board-col"><h4>${s} (${list.length})</h4>${list.map(p=>`<div class="board-card" onclick="editProject('${p.id}')"><div class="name">${escapeHtml(p.name)}</div><div class="meta">${escapeHtml(p.client||'')}${p.city?' &bull; '+escapeHtml(p.city):''}</div></div>`).join('')||'<div class="help-text" style="font-style:italic;">empty</div>'}</div>`;}).join('')}</div>
+  </div></div>`;
+};
+
+/* ---------------- projects ---------------- */
+VIEWS.projects=()=>`<div class="card"><h2>Projects <span class="count">${active('projects').length} active</span></h2>
+  <div class="toolbar"><button class="btn" onclick="editProject(null)">+ New Project</button>
+  <input type="search" id="projSearch" placeholder="Search projects..." oninput="window._pq=this.value;render()" value="${escapeAttr(window._pq||'')}">
+  <select onchange="window._pf=this.value;render()"><option value="">All statuses</option>${PROJECT_STATUSES.map(s=>`<option ${window._pf===s?'selected':''}>${s}</option>`).join('')}</select>
+  <label style="font-size:12px;color:var(--muted);"><input type="checkbox" ${SHOW_ARCHIVED?'checked':''} onchange="SHOW_ARCHIVED=this.checked;render()"> show archived</label></div>
+  ${projectTable()}</div>`;
+POST.projects=()=>{const el=document.getElementById('projSearch');if(el&&window._pq){el.focus();el.setSelectionRange(el.value.length,el.value.length);}};
+function projectTable(){
+  const q=(window._pq||'').toLowerCase(),sf=window._pf||'';
+  const list=STATE.projects.filter(p=>(SHOW_ARCHIVED||!p.archived)&&(!sf||p.status===sf)&&(!q||(p.name+(p.number||'')+(p.client||'')+(p.city||'')+(p.specSections||[]).join(' ')).toLowerCase().includes(q)));
+  if(list.length===0)return '<div class="empty-state">No projects match.</div>';
+  return `<table><thead><tr><th>Project</th><th>Client / GC</th><th>Systems</th><th>NTP</th><th>Completion</th><th>Status</th><th class="center">Subs</th><th class="center">RFIs</th><th class="num">Outstanding</th><th></th></tr></thead><tbody>
+  ${list.map(p=>{const subs=active('submittals').filter(s=>s.projectId===p.id);const rfis=active('rfis').filter(r=>r.projectId===p.id);const fin=projectFinancials(p.id);
+  return `<tr style="${p.archived?'opacity:0.5;':''}"><td><strong>${escapeHtml(p.name)}</strong>${p.number?`<div class="help-text">#${escapeHtml(p.number)}</div>`:''}<div class="help-text">${escapeHtml(p.address||'')} ${escapeHtml(p.city||'')}</div></td>
+  <td>${escapeHtml(p.client||'')}</td><td>${tagsHtml(p.specSections)}</td><td>${fmtDate(p.ntpDate)}</td><td>${fmtDate(p.completionDate)}</td><td>${statusBadge(p.status)}</td>
+  <td class="center">${subs.length}</td><td class="center">${rfis.length}</td>
+  <td class="num ${fin.balance>0.005?'money-out':'money-ok'}">${fin.count?fmtMoney(fin.balance):'—'}</td>
+  <td><button class="btn btn-small" onclick="editProject('${p.id}')">Open</button></td></tr>`;}).join('')}</tbody></table>`;
+}
+function editProject(id){
+  const isNew=!id;
+  const p=isNew?{id:uid(),name:'',number:'',client:'',address:'',city:'',status:'Bidding',specSections:[],ntpDate:'',startDate:'',completionDate:'',notes:[],archived:false}:byId('projects',id);
+  if(!p)return;
+  const subs=isNew?[]:active('submittals').filter(s=>s.projectId===p.id);
+  const rfis=isNew?[]:active('rfis').filter(r=>r.projectId===p.id);
+  const ests=isNew?[]:active('estimates').filter(e=>e.projectId===p.id);
+  const fin=isNew?null:projectFinancials(p.id);
+  openModal(isNew?'New Project':'Project — '+p.name,`
+    <div class="form-row"><div class="form-group"><label>Project Name *</label><input id="pf_name" value="${escapeAttr(p.name)}"></div>
+    <div class="form-group"><label>Project #</label><input id="pf_number" value="${escapeAttr(p.number||'')}"></div>
+    <div class="form-group"><label>Status</label><select id="pf_status">${PROJECT_STATUSES.map(s=>`<option ${s===(p.status||'Bidding')?'selected':''}>${s}</option>`).join('')}</select></div></div>
+    <div class="form-row"><div class="form-group"><label>Client / GC</label><input id="pf_client" value="${escapeAttr(p.client||'')}"></div>
+    <div class="form-group"><label>Address</label><input id="pf_address" value="${escapeAttr(p.address||'')}"></div>
+    <div class="form-group"><label>City, State, Zip</label><input id="pf_city" value="${escapeAttr(p.city||'')}"></div></div>
+    <div class="form-row"><div class="form-group"><label>NTP Date</label><input type="date" id="pf_ntp" value="${p.ntpDate||''}"></div>
+    <div class="form-group"><label>Start Date</label><input type="date" id="pf_start" value="${p.startDate||''}"></div>
+    <div class="form-group"><label>Contract Completion</label><input type="date" id="pf_completion" value="${p.completionDate||''}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Spec Sections / Systems</label><textarea id="pf_specs" placeholder="fire alarm, access control, CCTV&#10;structured cabling">${escapeHtml((p.specSections||[]).join(', '))}</textarea><div class="help-text">Comma-separated or one per line — rendered as tags.</div><div style="margin-top:6px;">${tagsHtml(p.specSections)}</div></div></div>
+    ${isNew?'':`
+    <h3 style="margin:14px 0 6px 0;font-size:13px;color:var(--brand-light);text-transform:uppercase;">Submittals (${subs.length}) <button class="btn btn-small" onclick="closeModal();editSubmittal(null,'${p.id}')">+ Add</button></h3>
+    ${subs.length===0?'<div class="help-text">None yet.</div>':`<table><thead><tr><th>Stage</th><th>Spec Section</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${subs.map(s=>`<tr><td>${escapeHtml(s.stage)}</td><td>${escapeHtml(s.specSection||'')}</td><td style="${s.dueDate&&s.dueDate<todayISO()&&!SUB_TERMINAL.includes(s.status)?'color:var(--alert);font-weight:bold;':''}">${fmtDate(s.dueDate)}</td><td>${subBadge(s.status)}</td><td><button class="btn btn-small" onclick="closeModal();editSubmittal('${s.id}')">Open</button></td></tr>`).join('')}</tbody></table>`}
+    <h3 style="margin:14px 0 6px 0;font-size:13px;color:var(--brand-light);text-transform:uppercase;">RFIs (${rfis.length}) <button class="btn btn-small" onclick="closeModal();editRfi(null,'${p.id}')">+ Add</button></h3>
+    ${rfis.length===0?'<div class="help-text">None yet.</div>':`<table><thead><tr><th>#</th><th>Subject</th><th>Needed By</th><th>Status</th><th></th></tr></thead><tbody>${rfis.map(r=>`<tr><td>${escapeHtml(r.number||'')}</td><td>${escapeHtml(r.subject||'')}</td><td style="${r.dateNeeded&&r.dateNeeded<todayISO()&&r.status==='Open'?'color:var(--alert);font-weight:bold;':''}">${fmtDate(r.dateNeeded)}</td><td>${rfiBadge(r.status)}</td><td><button class="btn btn-small" onclick="closeModal();editRfi('${r.id}')">Open</button></td></tr>`).join('')}</tbody></table>`}
+    <h3 style="margin:14px 0 6px 0;font-size:13px;color:var(--brand-light);text-transform:uppercase;">Estimates (${ests.length}) <button class="btn btn-small" onclick="newEstimateForProject('${p.id}')">+ Add</button></h3>
+    ${ests.length===0?'<div class="help-text">None yet.</div>':`<table><thead><tr><th>Number</th><th>Date</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Payment</th><th></th></tr></thead><tbody>${ests.map(e=>{const bal=balanceOf(e);return `<tr><td>${escapeHtml(e.number||'')}</td><td>${fmtDate(e.date)}</td><td class="num">${fmtMoney(estTotal(e))}</td><td class="num">${fmtMoney(paidAmount(e))}</td><td class="num ${bal>0.005?'money-out':'money-ok'}">${fmtMoney(bal)}</td><td>${payBadge(e)}</td><td><button class="btn btn-small" onclick="openEstimate('${e.id}')">Open</button></td></tr>`;}).join('')}</tbody></table>
+    <div style="display:flex;gap:20px;margin-top:8px;font-size:13px;"><span>Total: <strong>${fmtMoney(fin.total)}</strong></span><span>Paid: <strong class="money-ok">${fmtMoney(fin.paid)}</strong></span><span>Outstanding: <strong class="${fin.balance>0.005?'money-out':'money-ok'}">${fmtMoney(fin.balance)}</strong></span></div>`}
+    ${notesBlock('projects',p.id)}`}`,
+    `${isNew?'':`<button class="btn btn-secondary" onclick="archiveDoc('projects','${p.id}',${!p.archived})">${p.archived?'Unarchive':'Archive'}</button>`}
+    <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    <button class="btn" onclick="saveProject('${p.id}',${isNew})">Save</button>`);
+}
+function saveProject(id,isNew){
+  const name=document.getElementById('pf_name').value.trim();
+  if(!name){alert('Project name is required.');return;}
+  const patch={name,number:document.getElementById('pf_number').value.trim(),client:document.getElementById('pf_client').value.trim(),address:document.getElementById('pf_address').value.trim(),city:document.getElementById('pf_city').value.trim(),status:document.getElementById('pf_status').value,ntpDate:document.getElementById('pf_ntp').value,startDate:document.getElementById('pf_start').value,completionDate:document.getElementById('pf_completion').value,specSections:parseTags(document.getElementById('pf_specs').value)};
+  if(isNew)createDoc('projects',{id,notes:[],archived:false,...patch});else patchDoc('projects',id,patch);
+  closeModal();render();
+}
+function archiveDoc(coll,id,flag){if(flag&&!confirm('Archive this record? It is hidden from active views but never deleted.'))return;patchDoc(coll,id,{archived:flag});closeModal();render();}
+
+/* ---------------- submittals ---------------- */
+VIEWS.submittals=()=>{
+  const list=STATE.submittals.filter(s=>(SHOW_ARCHIVED||!s.archived)&&(!window._sp||s.projectId===window._sp));
+  return `<div class="card"><h2>Submittals <span class="count">Product Data &rarr; Shop Drawings &rarr; Closeouts</span></h2>
+  <div class="toolbar"><button class="btn" onclick="editSubmittal(null)">+ New Submittal</button>
+  <select onchange="window._sp=this.value;render()"><option value="">All projects</option>${active('projects').map(p=>`<option value="${p.id}" ${window._sp===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+  <label style="font-size:12px;color:var(--muted);"><input type="checkbox" ${SHOW_ARCHIVED?'checked':''} onchange="SHOW_ARCHIVED=this.checked;render()"> show archived</label></div>
+  ${SUB_STAGES.map(stage=>{const rows=list.filter(s=>s.stage===stage);return `
+  <h3 style="margin:14px 0 6px 0;font-size:13px;color:var(--brand-light);text-transform:uppercase;">${stage} (${rows.length})</h3>
+  ${rows.length===0?'<div class="help-text">None.</div>':`<table><thead><tr><th>Project</th><th>Spec Section</th><th>Submitted</th><th>Due / Return By</th><th>Status</th><th></th></tr></thead><tbody>
+  ${rows.map(s=>{const od=s.dueDate&&s.dueDate<todayISO()&&!SUB_TERMINAL.includes(s.status);return `<tr style="${s.archived?'opacity:0.5;':''}"><td>${escapeHtml(projName(s.projectId))}</td><td>${escapeHtml(s.specSection||'')}</td><td>${fmtDate(s.submitDate)}</td><td style="${od?'color:var(--alert);font-weight:bold;':''}">${fmtDate(s.dueDate)}${od?' &#9888;':''}</td><td>${subBadge(s.status)}</td><td><button class="btn btn-small" onclick="editSubmittal('${s.id}')">Open</button></td></tr>`;}).join('')}</tbody></table>`}`;}).join('')}</div>`;
+};
+function editSubmittal(id,presetProjectId){
+  const isNew=!id;
+  const s=isNew?{id:uid(),projectId:presetProjectId||'',stage:'Product Data',specSection:'',status:'Not Started',submitDate:'',dueDate:'',notes:[],archived:false}:byId('submittals',id);
+  if(!s)return;
+  openModal(isNew?'New Submittal':'Submittal — '+(s.specSection||''),`
+    <div class="form-row"><div class="form-group"><label>Project *</label><select id="sf_project"><option value="">(select)</option>${active('projects').map(p=>`<option value="${p.id}" ${p.id===s.projectId?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Spec Section / System *</label><input id="sf_spec" value="${escapeAttr(s.specSection||'')}" placeholder="e.g. 28 31 00 Fire Alarm"></div></div>
+    <div class="form-row"><div class="form-group"><label>Stage</label><select id="sf_stage">${SUB_STAGES.map(x=>`<option ${x===s.stage?'selected':''}>${x}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Status</label><select id="sf_status">${SUB_STATUSES.map(x=>`<option ${x===(s.status||'Not Started')?'selected':''}>${x}</option>`).join('')}</select></div></div>
+    <div class="form-row"><div class="form-group"><label>Submittal Date</label><input type="date" id="sf_submit" value="${s.submitDate||''}"></div>
+    <div class="form-group"><label>Due / Return-By Date</label><input type="date" id="sf_due" value="${s.dueDate||''}"><div class="help-text">If this date passes without Approved status, it flags in What's Next.</div></div></div>
+    ${isNew?'':notesBlock('submittals',s.id)}`,
+    `${isNew?'':`<button class="btn btn-secondary" onclick="archiveDoc('submittals','${s.id}',${!s.archived})">${s.archived?'Unarchive':'Archive'}</button>`}
+    <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    <button class="btn" onclick="saveSubmittal('${s.id}',${isNew})">Save</button>`);
+}
+function saveSubmittal(id,isNew){
+  const projectId=document.getElementById('sf_project').value;
+  const specSection=document.getElementById('sf_spec').value.trim();
+  if(!projectId||!specSection){alert('Project and spec section are required.');return;}
+  const patch={projectId,specSection,stage:document.getElementById('sf_stage').value,status:document.getElementById('sf_status').value,submitDate:document.getElementById('sf_submit').value,dueDate:document.getElementById('sf_due').value};
+  if(isNew)createDoc('submittals',{id,notes:[],archived:false,...patch});else patchDoc('submittals',id,patch);
+  closeModal();render();
+}
+
+/* ---------------- RFIs ---------------- */
+VIEWS.rfis=()=>{
+  const list=STATE.rfis.filter(r=>(SHOW_ARCHIVED||!r.archived)&&(!window._rp||r.projectId===window._rp));
+  return `<div class="card"><h2>RFIs <span class="count">${list.filter(r=>r.status==='Open').length} open</span></h2>
+  <div class="toolbar"><button class="btn" onclick="editRfi(null)">+ New RFI</button>
+  <select onchange="window._rp=this.value;render()"><option value="">All projects</option>${active('projects').map(p=>`<option value="${p.id}" ${window._rp===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+  <label style="font-size:12px;color:var(--muted);"><input type="checkbox" ${SHOW_ARCHIVED?'checked':''} onchange="SHOW_ARCHIVED=this.checked;render()"> show archived</label></div>
+  ${list.length===0?'<div class="empty-state">No RFIs.</div>':`<table><thead><tr><th>#</th><th>Project</th><th>Subject</th><th>Sent</th><th>Needed By</th><th>Status</th><th></th></tr></thead><tbody>
+  ${list.map(r=>{const od=r.dateNeeded&&r.dateNeeded<todayISO()&&r.status==='Open';return `<tr style="${r.archived?'opacity:0.5;':''}"><td>${escapeHtml(r.number||'')}</td><td>${escapeHtml(projName(r.projectId))}</td><td>${escapeHtml(r.subject||'')}</td><td>${fmtDate(r.dateSent)}</td><td style="${od?'color:var(--alert);font-weight:bold;':''}">${fmtDate(r.dateNeeded)}${od?' &#9888;':''}</td><td>${rfiBadge(r.status)}</td><td><button class="btn btn-small" onclick="editRfi('${r.id}')">Open</button></td></tr>`;}).join('')}</tbody></table>`}</div>`;
+};
+function editRfi(id,presetProjectId){
+  const isNew=!id;
+  const r=isNew?{id:uid(),projectId:presetProjectId||'',number:'',subject:'',dateSent:'',dateNeeded:'',status:'Open',notes:[],archived:false}:byId('rfis',id);
+  if(!r)return;
+  openModal(isNew?'New RFI':'RFI '+(r.number||''),`
+    <div class="form-row"><div class="form-group"><label>Project *</label><select id="rf_project"><option value="">(select)</option>${active('projects').map(p=>`<option value="${p.id}" ${p.id===r.projectId?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></div>
+    <div class="form-group"><label>RFI #</label><input id="rf_number" value="${escapeAttr(r.number||'')}"></div>
+    <div class="form-group"><label>Status</label><select id="rf_status">${RFI_STATUSES.map(x=>`<option ${x===(r.status||'Open')?'selected':''}>${x}</option>`).join('')}</select></div></div>
+    <div class="form-row"><div class="form-group" style="flex:2;"><label>Subject *</label><input id="rf_subject" value="${escapeAttr(r.subject||'')}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Date Sent</label><input type="date" id="rf_sent" value="${r.dateSent||''}"></div>
+    <div class="form-group"><label>Answer Needed By</label><input type="date" id="rf_needed" value="${r.dateNeeded||''}"><div class="help-text">If this date passes while Open, it flags in What's Next.</div></div></div>
+    ${isNew?'':notesBlock('rfis',r.id)}`,
+    `${isNew?'':`<button class="btn btn-secondary" onclick="archiveDoc('rfis','${r.id}',${!r.archived})">${r.archived?'Unarchive':'Archive'}</button>`}
+    <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    <button class="btn" onclick="saveRfi('${r.id}',${isNew})">Save</button>`);
+}
+function saveRfi(id,isNew){
+  const projectId=document.getElementById('rf_project').value;
+  const subject=document.getElementById('rf_subject').value.trim();
+  if(!projectId||!subject){alert('Project and subject are required.');return;}
+  const patch={projectId,subject,number:document.getElementById('rf_number').value.trim(),status:document.getElementById('rf_status').value,dateSent:document.getElementById('rf_sent').value,dateNeeded:document.getElementById('rf_needed').value};
+  if(isNew)createDoc('rfis',{id,notes:[],archived:false,...patch});else patchDoc('rfis',id,patch);
+  closeModal();render();
+}
+
+/* ---------------- estimates ---------------- */
+VIEWS.estimates=()=>{
+  const list=STATE.estimates.filter(e=>(SHOW_ARCHIVED||!e.archived)&&(!window._ep||e.projectId===window._ep));
+  return `<div class="card"><h2>Estimates <span class="count">${list.length} shown</span></h2>
+  <div class="toolbar">
+  <select id="newEstProj"><option value="">New estimate for project...</option>${active('projects').map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}</select>
+  <button class="btn" onclick="newEstFromToolbar()">+ Create</button>
+  <select onchange="window._ep=this.value;render()"><option value="">All projects</option>${active('projects').map(p=>`<option value="${p.id}" ${window._ep===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select>
+  <label style="font-size:12px;color:var(--muted);"><input type="checkbox" ${SHOW_ARCHIVED?'checked':''} onchange="SHOW_ARCHIVED=this.checked;render()"> show archived</label></div>
+  ${list.length===0?'<div class="empty-state">No estimates. Pick a project above and click + Create.</div>':`<table><thead><tr><th>Number</th><th>Date</th><th>Project</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Outstanding</th><th>Payment</th><th>Status</th><th></th></tr></thead><tbody>
+  ${list.slice().reverse().map(e=>{const bal=balanceOf(e);return `<tr style="${e.archived?'opacity:0.5;':''}"><td>${escapeHtml(e.number||'')}</td><td>${fmtDate(e.date)}</td><td>${escapeHtml(projName(e.projectId))}</td><td class="num">${fmtMoney(estTotal(e))}</td><td class="num">${fmtMoney(paidAmount(e))}</td><td class="num ${bal>0.005?'money-out':'money-ok'}">${fmtMoney(bal)}</td><td>${payBadge(e)}</td><td>${estBadge(e.status)}</td><td><button class="btn btn-small" onclick="openEstimate('${e.id}')">Open</button></td></tr>`;}).join('')}</tbody></table>`}</div>`;
+};
+function newEstFromToolbar(){const pid=document.getElementById('newEstProj').value;if(!pid){alert('Select a project first.');return;}newEstimateForProject(pid);}
+function newEstimateForProject(projectId){const e={id:uid(),projectId,number:nextEstNumber(),date:todayISO(),status:'Draft',lineItems:[],savings:0,payments:[],notes:[],archived:false};createDoc('estimates',e);openEstimate(e.id);}
+function openEstimate(id){CURRENT_ESTIMATE_ID=id;CURRENT_VIEW='estimateBuilder';closeModal();document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));render();}
+
+VIEWS.estimateBuilder=()=>{
+  const e=byId('estimates',CURRENT_ESTIMATE_ID);
+  if(!e)return '<div class="card"><div class="empty-state">Estimate not found.</div></div>';
+  return `
+  <div class="card"><h2>Estimate ${escapeHtml(e.number||'')} <span class="count">${escapeHtml(projName(e.projectId))}</span></h2>
+    <div class="toolbar"><button class="btn btn-secondary" onclick="showView('estimates')">&larr; All Estimates</button>
+    <button class="btn btn-secondary" onclick="duplicateEstimate('${e.id}')">Duplicate</button>
+    <button class="btn btn-secondary" onclick="window.print()">Print</button>
+    <button class="btn btn-secondary" onclick="archiveDoc('estimates','${e.id}',${!e.archived});showView('estimates')">${e.archived?'Unarchive':'Archive'}</button></div>
+    <div class="form-row">
+      <div class="form-group"><label>Estimate #</label><input id="ef_number" value="${escapeAttr(e.number||'')}" onchange="persistEstimateHeader()"></div>
+      <div class="form-group"><label>Date</label><input type="date" id="ef_date" value="${e.date||''}" onchange="persistEstimateHeader()"></div>
+      <div class="form-group"><label>Project</label><select id="ef_project" onchange="persistEstimateHeader()">${active('projects').map(p=>`<option value="${p.id}" ${p.id===e.projectId?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></div>
+      <div class="form-group"><label>Status</label><select id="ef_status" onchange="persistEstimateHeader()">${EST_STATUSES.map(s=>`<option ${s===(e.status||'Draft')?'selected':''}>${s}</option>`).join('')}</select></div>
+    </div>
+  </div>
+  <div class="card collapsible"><h2 onclick="toggleCard(this)">Add Scope from Rate Card</h2><div class="card-body">
+    <div class="tabs-mini">${RATE_SECTIONS.map((s,i)=>`<button class="${i===0?'active':''}" onclick="switchScopeTab(this,'${s.key}')">${s.label}</button>`).join('')}<button onclick="switchScopeTab(this,'oneoffs')">One-Off Library</button></div>
+    ${RATE_SECTIONS.map((s,i)=>`<div id="scope_${s.key}" class="scope-pane" style="${i===0?'':'display:none;'}">${active('rates').filter(r=>r.section===s.key).map(r=>`<div class="scope-row"><label>${escapeHtml(r.desc)}</label><span class="rate">${fmtMoney(r.rate)} ${escapeHtml(r.unit)}</span><input type="number" min="0" step="any" placeholder="qty/hrs" id="qty_${r.id}"><button class="btn btn-small" onclick="addFromRate('${r.id}')">Add</button></div>`).join('')||'<div class="help-text">No rates in this section.</div>'}</div>`).join('')}
+    <div id="scope_oneoffs" class="scope-pane" style="display:none;">${active('oneoffs').map(o=>`<div class="scope-row"><label>${escapeHtml(o.desc)}</label><span class="rate">${fmtMoney(o.amount)} flat</span><input type="number" min="1" step="1" value="1" id="oqty_${o.id}"><button class="btn btn-small" onclick="addFromOneOff('${o.id}')">Add</button></div>`).join('')||'<div class="help-text">One-off library is empty.</div>'}</div>
+    <div style="margin-top:10px;"><button class="btn btn-secondary" onclick="addBlankLine()">+ Custom Line Item</button></div>
+  </div></div>
+  <div class="card"><h2>Line Items &amp; Balance</h2>
+    <div class="estimate-line" style="background:var(--brand);color:#fff;font-weight:bold;border:none;"><div>Description</div><div style="text-align:center;">Qty / Hrs</div><div style="text-align:right;">Rate</div><div style="text-align:right;">Total</div><div></div></div>
+    <div id="lineItems"></div>
+    <div class="totals-box">
+      <div class="totals-row"><span>Subtotal</span><span id="t_sub">$0.00</span></div>
+      <div class="totals-row"><span>Discount / Savings</span><span><input type="number" id="ef_savings" value="${e.savings||0}" step="0.01" style="width:110px;text-align:right;padding:4px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:4px;" oninput="recalcEstimate(true)"></span></div>
+      <div class="totals-row grand"><span>Grand Total</span><span id="t_total">$0.00</span></div>
+      <div class="totals-row" style="border-top:1px solid var(--line);margin-top:8px;padding-top:8px;"><span>Balance Paid</span><span id="t_paid" class="money-ok">$0.00</span></div>
+      <div class="totals-row"><span>Balance Outstanding</span><span id="t_bal">$0.00</span></div>
+      <div class="totals-row"><span></span><span id="t_badge"></span></div>
+    </div>
+  </div>
+  <div class="card"><h2>Payments</h2>
+    <div class="toolbar"><button class="btn" onclick="markPaidInFull()">Mark Paid in Full</button><button class="btn btn-secondary" onclick="togglePayForm()">+ Record Payment</button></div>
+    <div id="payForm" style="display:none;background:var(--panel-2);padding:12px;border-radius:6px;margin-bottom:12px;">
+      <div class="form-row"><div class="form-group"><label>Date</label><input type="date" id="pay_date" value="${todayISO()}"></div>
+      <div class="form-group"><label>Amount</label><input type="number" step="0.01" min="0" id="pay_amount" placeholder="0.00"></div>
+      <div class="form-group"><label>Method</label><select id="pay_method"><option>Check</option><option>Cash</option><option>Credit Card</option><option>ACH / Bank Transfer</option><option>Zelle / Venmo / PayPal</option><option>Other</option></select></div>
+      <div class="form-group"><label>Reference / Note</label><input id="pay_note" placeholder="check #, memo..."></div></div>
+      <button class="btn" onclick="addPayment()">Save Payment</button> <button class="btn btn-secondary" onclick="togglePayForm()">Cancel</button>
+    </div>
+    <div id="payList"></div>
+  </div>
+  <div class="card">${notesBlock('estimates',e.id)}</div>`;
+};
+POST.estimateBuilder=()=>{rerenderLineItems();renderPayList();};
+let _liT=null;
+function persistLineItems(){const e=byId('estimates',CURRENT_ESTIMATE_ID);if(!e)return;clearTimeout(_liT);_liT=setTimeout(()=>patchDoc('estimates',e.id,{lineItems:e.lineItems,savings:e.savings}),400);}
+function persistEstimateHeader(){const e=byId('estimates',CURRENT_ESTIMATE_ID);if(!e)return;patchDoc('estimates',e.id,{number:document.getElementById('ef_number').value.trim(),date:document.getElementById('ef_date').value,projectId:document.getElementById('ef_project').value,status:document.getElementById('ef_status').value});}
+function switchScopeTab(btn,key){btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.scope-pane').forEach(p=>p.style.display='none');document.getElementById('scope_'+key).style.display='block';}
+function addFromRate(rateId){const r=byId('rates',rateId);if(!r)return;const qty=parseFloat(document.getElementById('qty_'+rateId).value)||0;if(qty<=0){alert('Enter a quantity / hours first.');return;}const e=byId('estimates',CURRENT_ESTIMATE_ID);e.lineItems.push({id:uid(),desc:r.desc,qty,rate:r.rate,unit:r.unit});document.getElementById('qty_'+rateId).value='';persistLineItems();rerenderLineItems();}
+function addFromOneOff(oid){const o=byId('oneoffs',oid);if(!o)return;const qty=parseFloat(document.getElementById('oqty_'+oid).value)||1;const e=byId('estimates',CURRENT_ESTIMATE_ID);e.lineItems.push({id:uid(),desc:o.desc,qty,rate:o.amount,unit:'flat'});persistLineItems();rerenderLineItems();}
+function addBlankLine(){const e=byId('estimates',CURRENT_ESTIMATE_ID);e.lineItems.push({id:uid(),desc:'',qty:1,rate:0,unit:''});persistLineItems();rerenderLineItems();}
+function removeLine(lid){const e=byId('estimates',CURRENT_ESTIMATE_ID);e.lineItems=e.lineItems.filter(l=>l.id!==lid);persistLineItems();rerenderLineItems();}
+function updateLine(lid,field,value){const e=byId('estimates',CURRENT_ESTIMATE_ID);const l=e.lineItems.find(x=>x.id===lid);if(!l)return;if(field==='qty'||field==='rate')value=parseFloat(value)||0;l[field]=value;const cell=document.querySelector(`.estimate-line[data-id="${lid}"] .total-cell`);if(cell)cell.textContent=fmtMoney((l.qty||0)*(l.rate||0));persistLineItems();recalcEstimate();}
+function rerenderLineItems(){const e=byId('estimates',CURRENT_ESTIMATE_ID);const wrap=document.getElementById('lineItems');if(!e||!wrap)return;wrap.innerHTML=e.lineItems.length===0?'<div class="empty-state">No line items. Add scope from the rate card above.</div>':e.lineItems.map(l=>`<div class="estimate-line" data-id="${l.id}"><input type="text" value="${escapeAttr(l.desc)}" oninput="updateLine('${l.id}','desc',this.value)"><input type="number" step="any" min="0" value="${l.qty}" oninput="updateLine('${l.id}','qty',this.value)"><input type="number" step="any" min="0" value="${l.rate}" oninput="updateLine('${l.id}','rate',this.value)"><div class="total-cell">${fmtMoney((l.qty||0)*(l.rate||0))}</div><button onclick="removeLine('${l.id}')" title="Remove line">&times;</button></div>`).join('');recalcEstimate();}
+function setTxt(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+function recalcEstimate(persist){const e=byId('estimates',CURRENT_ESTIMATE_ID);if(!e)return;const sav=parseFloat(document.getElementById('ef_savings')?.value)||0;e.savings=sav;if(persist)persistLineItems();const sub=estSubtotal(e),total=estTotal(e),paid=paidAmount(e),bal=total-paid;setTxt('t_sub',fmtMoney(sub));setTxt('t_total',fmtMoney(total));setTxt('t_paid',fmtMoney(paid));setTxt('t_bal',fmtMoney(bal));const b=document.getElementById('t_bal');if(b)b.className=bal>0.005?'money-out':'money-ok';const badge=document.getElementById('t_badge');if(badge)badge.innerHTML=payBadge(e);}
+function togglePayForm(){const f=document.getElementById('payForm');if(!f)return;f.style.display=f.style.display==='none'?'block':'none';if(f.style.display==='block')document.getElementById('pay_amount').focus();}
+function addPayment(){const e=byId('estimates',CURRENT_ESTIMATE_ID);if(!e)return;const amount=parseFloat(document.getElementById('pay_amount').value);if(!amount||amount<=0){alert('Enter a payment amount greater than zero.');return;}appendPayment(e.id,{id:uid(),date:document.getElementById('pay_date').value||todayISO(),amount,method:document.getElementById('pay_method').value,note:document.getElementById('pay_note').value.trim()});document.getElementById('payForm').style.display='none';renderPayList();recalcEstimate();}
+function appendPayment(estId,payment){const e=byId('estimates',estId);if(!Array.isArray(e.payments))e.payments=[];e.payments.push(payment);if(FB){FB.db.collection('estimates').doc(estId).update({payments:firebase.firestore.FieldValue.arrayUnion(payment)}).catch(fbErr);}else{lsSave();}}
+function markPaidInFull(){const e=byId('estimates',CURRENT_ESTIMATE_ID);if(!e)return;const total=estTotal(e);if(total<=0){alert('No total to pay yet — add line items first.');return;}const bal=balanceOf(e);if(bal<=0.005){alert('Already paid in full.');return;}if(!confirm(`Record ${fmtMoney(bal)} as paid in full today?`))return;appendPayment(e.id,{id:uid(),date:todayISO(),amount:bal,method:'Paid in Full',note:''});renderPayList();recalcEstimate();}
+function voidPayment(pid){const e=byId('estimates',CURRENT_ESTIMATE_ID);const p=(e.payments||[]).find(x=>x.id===pid);if(!p)return;if(!confirm('Void this payment? It stays on record but no longer counts toward the balance.'))return;p.void=true;patchDoc('estimates',e.id,{payments:e.payments});renderPayList();recalcEstimate();}
+function renderPayList(){const e=byId('estimates',CURRENT_ESTIMATE_ID);const wrap=document.getElementById('payList');if(!e||!wrap)return;const ps=(e.payments||[]).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));wrap.innerHTML=ps.length===0?'<div class="empty-state">No payments recorded.</div>':`<table><thead><tr><th>Date</th><th>Method</th><th>Reference</th><th class="num">Amount</th><th></th></tr></thead><tbody>${ps.map(p=>`<tr style="${p.void?'opacity:0.45;text-decoration:line-through;':''}"><td>${fmtDate(p.date)}</td><td>${escapeHtml(p.method||'')}</td><td>${escapeHtml(p.note||'')}</td><td class="num">${fmtMoney(p.amount)}</td><td>${p.void?'<span class="help-text">voided</span>':`<button class="btn btn-small btn-secondary" onclick="voidPayment('${p.id}')">Void</button>`}</td></tr>`).join('')}</tbody></table>`;}
+function duplicateEstimate(id){const orig=byId('estimates',id);if(!orig)return;const copy=JSON.parse(JSON.stringify(orig));copy.id=uid();copy.number=nextEstNumber();copy.date=todayISO();copy.status='Draft';copy.payments=[];copy.notes=[];copy.archived=false;copy.lineItems=copy.lineItems.map(l=>({...l,id:uid()}));createDoc('estimates',copy);openEstimate(copy.id);}
+
+/* ---------------- rate card & one-off library ---------------- */
+VIEWS.rates=()=>`<div class="card"><h2>Rate Card</h2><p class="help-text">Edits save on change. New estimates pull current rates; existing estimates keep the rates they were built with. Archived rates stay on old records.</p>
+  ${RATE_SECTIONS.map(s=>{const rows=STATE.rates.filter(r=>r.section===s.key&&(SHOW_ARCHIVED||!r.archived));return `
+  <h3 style="margin:14px 0 6px 0;font-size:13px;color:var(--brand-light);text-transform:uppercase;">${s.label} <button class="btn btn-small" onclick="addRate('${s.key}')">+ Add Rate</button></h3>
+  <table><thead><tr><th>Description</th><th class="num">Rate</th><th>Unit</th><th></th></tr></thead><tbody>
+  ${rows.map(r=>`<tr style="${r.archived?'opacity:0.5;':''}"><td><input value="${escapeAttr(r.desc)}" onchange="patchDoc('rates','${r.id}',{desc:this.value})" style="width:100%;padding:5px;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:4px;"></td>
+  <td class="num"><input type="number" step="0.01" value="${r.rate}" onchange="patchDoc('rates','${r.id}',{rate:parseFloat(this.value)||0})" style="width:100px;padding:5px;text-align:right;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:4px;"></td>
+  <td><input value="${escapeAttr(r.unit)}" onchange="patchDoc('rates','${r.id}',{unit:this.value})" style="width:110px;padding:5px;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:4px;"></td>
+  <td><button class="btn btn-small btn-secondary" onclick="patchDoc('rates','${r.id}',{archived:${!r.archived}});render()">${r.archived?'Unarchive':'Archive'}</button></td></tr>`).join('')}</tbody></table>`;}).join('')}
+  <label style="font-size:12px;color:var(--muted);display:block;margin-top:10px;"><input type="checkbox" ${SHOW_ARCHIVED?'checked':''} onchange="SHOW_ARCHIVED=this.checked;render()"> show archived</label></div>`;
+function addRate(section){createDoc('rates',{id:uid(),section,desc:'New item',rate:0,unit:'each',archived:false});render();}
+VIEWS.oneoffs=()=>`<div class="card"><h2>One-Off Library</h2><p class="help-text">Flat-fee items you can drop into any estimate (site visits, permit submittals, expedited fees).</p>
+  <div class="toolbar"><button class="btn" onclick="addOneOff()">+ Add One-Off</button><label style="font-size:12px;color:var(--muted);"><input type="checkbox" ${SHOW_ARCHIVED?'checked':''} onchange="SHOW_ARCHIVED=this.checked;render()"> show archived</label></div>
+  <table><thead><tr><th>Description</th><th class="num">Amount</th><th></th></tr></thead><tbody>
+  ${STATE.oneoffs.filter(o=>SHOW_ARCHIVED||!o.archived).map(o=>`<tr style="${o.archived?'opacity:0.5;':''}"><td><input value="${escapeAttr(o.desc)}" onchange="patchDoc('oneoffs','${o.id}',{desc:this.value})" style="width:100%;padding:5px;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:4px;"></td>
+  <td class="num"><input type="number" step="0.01" value="${o.amount}" onchange="patchDoc('oneoffs','${o.id}',{amount:parseFloat(this.value)||0})" style="width:120px;padding:5px;text-align:right;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:4px;"></td>
+  <td><button class="btn btn-small btn-secondary" onclick="patchDoc('oneoffs','${o.id}',{archived:${!o.archived}});render()">${o.archived?'Unarchive':'Archive'}</button></td></tr>`).join('')}</tbody></table></div>`;
+function addOneOff(){createDoc('oneoffs',{id:uid(),desc:'New one-off',amount:0,archived:false});render();}
+
+/* ---------------- settings / data management ---------------- */
+VIEWS.settings=()=>`
+  <div class="card"><h2>Deployment</h2>
+    <table><tbody>
+    <tr><td style="width:220px;"><strong>Company</strong></td><td>Visionary Advancement</td></tr>
+    <tr><td><strong>Brand / Alert</strong></td><td><span class="tag" style="border-color:var(--brand-light);">--brand #1F4E78</span> <span class="tag" style="border-color:var(--alert);color:var(--alert);">--alert #E50914</span></td></tr>
+    <tr><td><strong>Backend</strong></td><td>${FB?'Firebase LIVE — Firestore is source of truth':'LOCAL MODE — no Firebase config. Data lives in this browser only. Paste your Firebase web config into FIREBASE_CONFIG at the top of the script, deploy to GitHub Pages, and this becomes multi-device with login.'}</td></tr>
+    <tr><td><strong>Local backups</strong></td><td>30-day rolling snapshots in this browser + manual JSON backup below.</td></tr>
+    </tbody></table>
+  </div>
+  <div class="card"><h2>Data Management</h2>
+    <p class="help-text">Imports are additive and idempotent — existing records (matched by ID) are never overwritten, and you review a summary before anything is written.</p>
+    <button class="btn" onclick="exportData()">Download Backup (JSON)</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Import from JSON</button>
+  </div>`;
+function exportData(){const blob=new Blob([JSON.stringify(STATE,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`va-crm-backup-${todayISO()}.json`;a.click();}
+function importData(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const obj=JSON.parse(e.target.result);
+      const plan={};let anyNew=0;
+      COLLS.forEach(c=>{const incoming=Array.isArray(obj[c])?obj[c].filter(d=>d&&d.id):[];const existing=new Set(STATE[c].map(d=>d.id));const fresh=incoming.filter(d=>!existing.has(d.id));plan[c]={fresh,skipped:incoming.length-fresh.length};anyNew+=fresh.length;});
+      /* §3: reviewable summary BEFORE any write */
+      openModal('Import Review — nothing written yet',`
+        <table><thead><tr><th>Collection</th><th class="num">New (will add)</th><th class="num">Existing (skipped)</th></tr></thead><tbody>
+        ${COLLS.map(c=>`<tr><td>${c}</td><td class="num">${plan[c].fresh.length}</td><td class="num">${plan[c].skipped}</td></tr>`).join('')}</tbody></table>
+        <p class="help-text" style="margin-top:10px;">Additive only: no existing record will be modified or deleted. Re-running the same file adds nothing (keyed on record IDs).</p>`,
+        `<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        ${anyNew?`<button class="btn" onclick="applyImport()">Apply Import (${anyNew} records)</button>`:'<span class="help-text">Nothing new to import.</span>'}`);
+      window._importPlan=plan;
+    }catch(err){alert('Could not read file: '+err.message);}
+  };
+  reader.readAsText(file);ev.target.value='';
+}
+function applyImport(){const plan=window._importPlan;if(!plan)return;COLLS.forEach(c=>{(plan[c].fresh||[]).forEach(d=>createDoc(c,d));});window._importPlan=null;closeModal();render();alert('Import complete.');}
+
+/* ---------------- PWA (passthrough — zero caching) ---------------- */
+try{
+  const manifest={name:'Visionary Advancement CRM',short_name:'VA CRM',start_url:'.',display:'standalone',background_color:'#0A0A0A',theme_color:'#1F4E78'};
+  document.getElementById('manifestLink').href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest));
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{/* sw.js optional until deploy */});
+}catch(e){/* non-fatal */}
+
+initBackend();
+</script>
+</body>
+</html>
