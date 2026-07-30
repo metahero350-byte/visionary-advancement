@@ -182,8 +182,8 @@
 /* ============================================================
    Visionary Advancement CRM — {{COMPANY_NAME}} deployment
    BRAND_COLOR : #1F4E78   ALERT_COLOR : #E50914
-   FIREBASE_PROJECT : (pending — paste config below)
-   GH_PAGES_REPO    : (pending)
+   FIREBASE_PROJECT : visionary-advancement-crm
+   GH_PAGES_REPO    : (user's GitHub Pages repo)
    ------------------------------------------------------------
    To go live: paste your Firebase web-app config object into
    FIREBASE_CONFIG below. Until then the app runs in LOCAL MODE
@@ -192,7 +192,14 @@
    At deploy time, add a passthrough sw.js next to this file:
      self.addEventListener('fetch',e=>e.respondWith(fetch(e.request)));
    ============================================================ */
-const FIREBASE_CONFIG = null; /* e.g. {apiKey:"...",authDomain:"...",projectId:"...",storageBucket:"...",messagingSenderId:"...",appId:"..."} */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDhGxZBXITUb07sSVwFaI2FQXxYh9DfOHU",
+  authDomain: "visionary-advancement-crm.firebaseapp.com",
+  projectId: "visionary-advancement-crm",
+  storageBucket: "visionary-advancement-crm.firebasestorage.app",
+  messagingSenderId: "866332640205",
+  appId: "1:866332640205:web:fdcbf971a60733a3eb7a84"
+};
 
 const LS_KEY='va.crm.fw.v1';
 const COLLS=['projects','submittals','rfis','estimates','rates','oneoffs'];
