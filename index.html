@@ -29,7 +29,13 @@
   header .sub{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
   .mode-pill{display:inline-block;font-size:10px;font-weight:bold;letter-spacing:1px;padding:3px 8px;border-radius:3px;border:1px solid var(--hold);color:var(--hold);margin-left:10px;vertical-align:middle;}
   .mode-pill.live{border-color:var(--ok);color:var(--ok);}
-  nav.tabs{background:var(--panel-2);padding:0 22px;display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line);}
+  nav.tabs{background:var(--panel-2);padding:0 22px;display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line);align-items:center;}
+  .gsearch{margin-left:auto;display:flex;gap:6px;align-items:center;padding:6px 0;}
+  .gsearch input{padding:7px 10px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--text);min-width:230px;font-size:12px;}
+  .gsearch input:focus{outline:1px solid var(--brand-light);}
+  .gres{display:block;padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px;}
+  .gres:hover{background:var(--panel-2);}
+  .gres .kind{display:inline-block;width:90px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;}
   nav.tabs button{background:transparent;color:var(--muted);border:none;padding:12px 16px;cursor:pointer;font-size:13px;font-weight:bold;border-bottom:3px solid transparent;text-transform:uppercase;letter-spacing:0.5px;}
   nav.tabs button:hover{color:var(--text);}
   nav.tabs button.active{color:var(--text);border-bottom-color:var(--brand-light);}
@@ -170,12 +176,15 @@
 <nav class="tabs">
   <button data-view="dashboard" class="active" onclick="showView('dashboard',this)">Dashboard</button>
   <button data-view="projects" onclick="showView('projects',this)">Projects</button>
+  <button data-view="contractors" onclick="showView('contractors',this)">Contractors</button>
+  <button data-view="clients" onclick="showView('clients',this)">Clients</button>
   <button data-view="submittals" onclick="showView('submittals',this)">Submittals</button>
   <button data-view="rfis" onclick="showView('rfis',this)">RFIs</button>
   <button data-view="estimates" onclick="showView('estimates',this)">Estimates</button>
   <button data-view="rates" onclick="showView('rates',this)">Rate Card</button>
   <button data-view="oneoffs" onclick="showView('oneoffs',this)">One-Offs</button>
   <button data-view="settings" onclick="showView('settings',this)">Settings</button>
+  <span class="gsearch"><input type="search" id="globalSearch" placeholder="Search projects, contractors, clients..." onkeydown="if(event.key==='Enter')globalSearch(this.value)"><button class="btn btn-small" onclick="globalSearch(document.getElementById('globalSearch').value)">Go</button></span>
 </nav>
 <main id="main"></main>
 <div id="modal" class="modal-backdrop"><div class="modal"><div class="modal-header"><h3 id="modalTitle"></h3><button class="modal-close" onclick="closeModal()">&times;</button></div><div class="modal-body" id="modalBody"></div><div class="modal-footer" id="modalFooter"></div></div></div>
@@ -204,7 +213,7 @@ const FIREBASE_CONFIG = {
 };
 
 const LS_KEY='va.crm.fw.v1';
-const COLLS=['projects','submittals','rfis','estimates','rates','oneoffs'];
+const COLLS=['projects','submittals','rfis','estimates','rates','oneoffs','contractors','clients'];
 const PROJECT_STATUSES=['Bidding','Awarded','In Progress','Closeout','Complete','On Hold','Lost'];
 const TERMINAL_PROJECT=['Complete','Lost'];
 const SUB_STAGES=['Product Data','Shop Drawings','Closeouts'];
@@ -255,7 +264,7 @@ const DEFAULT_ONEOFFS=[
  {id:'oo_05',desc:'Expedited drawing fee',amount:400}
 ];
 
-let STATE={projects:[],submittals:[],rfis:[],estimates:[],rates:[],oneoffs:[]};
+let STATE={projects:[],submittals:[],rfis:[],estimates:[],rates:[],oneoffs:[],contractors:[],clients:[]};
 let FB=null; let CURRENT_VIEW='dashboard'; let SHOW_ARCHIVED=false; let CURRENT_ESTIMATE_ID=null;
 
 function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);}
@@ -270,6 +279,10 @@ function parseTags(s){return String(s||'').split(/[\n,]/).map(x=>x.trim()).filte
 function tagsHtml(arr){return (arr||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')||'<span class="help-text">none</span>';}
 function byId(coll,id){return STATE[coll].find(x=>x.id===id);}
 function projName(id){return byId('projects',id)?.name||'(unassigned)';}
+function contractorName(id){return byId('contractors',id)?.name||'';}
+function clientName(id){return byId('clients',id)?.name||'';}
+function projParty(p){return [contractorName(p.contractorId),clientName(p.clientId)].filter(Boolean).join(' / ')||p.client||'';} /* p.client = legacy free-text fallback */
+function contactLinks(x,showSite){const bits=[];if(x.phone)bits.push(`<a href="tel:${escapeAttr(x.phone)}" style="color:var(--brand-light);">${escapeHtml(x.phone)}</a>`);if(x.email)bits.push(`<a href="mailto:${escapeAttr(x.email)}" style="color:var(--brand-light);">${escapeHtml(x.email)}</a>`);if(showSite&&x.website){const url=/^https?:\/\//i.test(x.website)?x.website:'https://'+x.website;bits.push(`<a href="${escapeAttr(url)}" target="_blank" rel="noopener" style="color:var(--brand-light);">${escapeHtml(x.website)}</a>`);}return bits.join(' &bull; ');}
 function active(coll){return STATE[coll].filter(x=>!x.archived);}
 
 /* ---------------- persistence: local mode ---------------- */
@@ -362,7 +375,7 @@ function notesBlock(coll,id){const d=byId(coll,id);const notes=(d?.notes||[]).sl
   <div class="form-row"><div class="form-group" style="flex:3;"><textarea id="newNote_${id}" placeholder="Add a note — stamped and permanent once saved"></textarea></div>
   <div class="form-group" style="flex:0 0 auto;align-self:flex-end;"><button class="btn" onclick="saveNote('${coll}','${id}')">Add Note</button></div></div>
   <div id="noteList_${id}">${notes.length===0?'<div class="help-text">No notes yet.</div>':notes.map(n=>`<div class="note-entry"><span class="stamp">${escapeHtml(n.ts)}</span>${escapeHtml(n.text)}</div>`).join('')}</div>`;}
-function saveNote(coll,id){const el=document.getElementById('newNote_'+id);const text=(el?.value||'').trim();if(!text){alert('Note is empty.');return;}appendNote(coll,id,text);const map={projects:'editProject',submittals:'editSubmittal',rfis:'editRfi'};window[map[coll]](id);}
+function saveNote(coll,id){const el=document.getElementById('newNote_'+id);const text=(el?.value||'').trim();if(!text){alert('Note is empty.');return;}appendNote(coll,id,text);if(coll==='contractors'||coll==='clients'){editParty(coll,id);return;}if(coll==='estimates'){render();return;}const map={projects:'editProject',submittals:'editSubmittal',rfis:'editRfi'};window[map[coll]](id);}
 
 /* ---------------- dashboard ---------------- */
 VIEWS.dashboard=()=>{
@@ -387,7 +400,7 @@ VIEWS.dashboard=()=>{
     ${flags.length===0?'<div class="empty-state">Nothing overdue. All dated milestones are on track or closed.</div>':flags.map(f=>`<a class="overdue-flag" onclick="${f.open}"><span>&#9888; ${escapeHtml(f.kind)} overdue since ${fmtDate(f.due)} — ${escapeHtml(f.label)}</span><span class="ctx">${escapeHtml(f.ctx)}</span></a>`).join('')}
   </div></div>
   <div class="card collapsible"><h2 onclick="toggleCard(this)">Project Board</h2><div class="card-body">
-    <div class="board">${PROJECT_STATUSES.map(s=>{const list=projs.filter(p=>p.status===s);return `<div class="board-col"><h4>${s} (${list.length})</h4>${list.map(p=>`<div class="board-card" onclick="editProject('${p.id}')"><div class="name">${escapeHtml(p.name)}</div><div class="meta">${escapeHtml(p.client||'')}${p.city?' &bull; '+escapeHtml(p.city):''}</div></div>`).join('')||'<div class="help-text" style="font-style:italic;">empty</div>'}</div>`;}).join('')}</div>
+    <div class="board">${PROJECT_STATUSES.map(s=>{const list=projs.filter(p=>p.status===s);return `<div class="board-col"><h4>${s} (${list.length})</h4>${list.map(p=>`<div class="board-card" onclick="editProject('${p.id}')"><div class="name">${escapeHtml(p.name)}</div><div class="meta">${escapeHtml(projParty(p))}${p.city?' &bull; '+escapeHtml(p.city):''}</div></div>`).join('')||'<div class="help-text" style="font-style:italic;">empty</div>'}</div>`;}).join('')}</div>
   </div></div>`;
 };
 
@@ -401,19 +414,19 @@ VIEWS.projects=()=>`<div class="card"><h2>Projects <span class="count">${active(
 POST.projects=()=>{const el=document.getElementById('projSearch');if(el&&window._pq){el.focus();el.setSelectionRange(el.value.length,el.value.length);}};
 function projectTable(){
   const q=(window._pq||'').toLowerCase(),sf=window._pf||'';
-  const list=STATE.projects.filter(p=>(SHOW_ARCHIVED||!p.archived)&&(!sf||p.status===sf)&&(!q||(p.name+(p.number||'')+(p.client||'')+(p.city||'')+(p.specSections||[]).join(' ')).toLowerCase().includes(q)));
+  const list=STATE.projects.filter(p=>(SHOW_ARCHIVED||!p.archived)&&(!sf||p.status===sf)&&(!q||(p.name+(p.number||'')+projParty(p)+(p.city||'')+(p.specSections||[]).join(' ')).toLowerCase().includes(q)));
   if(list.length===0)return '<div class="empty-state">No projects match.</div>';
   return `<table><thead><tr><th>Project</th><th>Client / GC</th><th>Systems</th><th>NTP</th><th>Completion</th><th>Status</th><th class="center">Subs</th><th class="center">RFIs</th><th class="num">Outstanding</th><th></th></tr></thead><tbody>
   ${list.map(p=>{const subs=active('submittals').filter(s=>s.projectId===p.id);const rfis=active('rfis').filter(r=>r.projectId===p.id);const fin=projectFinancials(p.id);
   return `<tr style="${p.archived?'opacity:0.5;':''}"><td><strong>${escapeHtml(p.name)}</strong>${p.number?`<div class="help-text">#${escapeHtml(p.number)}</div>`:''}<div class="help-text">${escapeHtml(p.address||'')} ${escapeHtml(p.city||'')}</div></td>
-  <td>${escapeHtml(p.client||'')}</td><td>${tagsHtml(p.specSections)}</td><td>${fmtDate(p.ntpDate)}</td><td>${fmtDate(p.completionDate)}</td><td>${statusBadge(p.status)}</td>
+  <td>${escapeHtml(projParty(p))}</td><td>${tagsHtml(p.specSections)}</td><td>${fmtDate(p.ntpDate)}</td><td>${fmtDate(p.completionDate)}</td><td>${statusBadge(p.status)}</td>
   <td class="center">${subs.length}</td><td class="center">${rfis.length}</td>
   <td class="num ${fin.balance>0.005?'money-out':'money-ok'}">${fin.count?fmtMoney(fin.balance):'—'}</td>
   <td><button class="btn btn-small" onclick="editProject('${p.id}')">Open</button></td></tr>`;}).join('')}</tbody></table>`;
 }
 function editProject(id){
   const isNew=!id;
-  const p=isNew?{id:uid(),name:'',number:'',client:'',address:'',city:'',status:'Bidding',specSections:[],ntpDate:'',startDate:'',completionDate:'',notes:[],archived:false}:byId('projects',id);
+  const p=isNew?{id:uid(),name:'',number:'',contractorId:null,clientId:null,address:'',city:'',status:'Bidding',specSections:[],ntpDate:'',startDate:'',completionDate:'',notes:[],archived:false}:byId('projects',id);
   if(!p)return;
   const subs=isNew?[]:active('submittals').filter(s=>s.projectId===p.id);
   const rfis=isNew?[]:active('rfis').filter(r=>r.projectId===p.id);
@@ -423,8 +436,12 @@ function editProject(id){
     <div class="form-row"><div class="form-group"><label>Project Name *</label><input id="pf_name" value="${escapeAttr(p.name)}"></div>
     <div class="form-group"><label>Project #</label><input id="pf_number" value="${escapeAttr(p.number||'')}"></div>
     <div class="form-group"><label>Status</label><select id="pf_status">${PROJECT_STATUSES.map(s=>`<option ${s===(p.status||'Bidding')?'selected':''}>${s}</option>`).join('')}</select></div></div>
-    <div class="form-row"><div class="form-group"><label>Client / GC</label><input id="pf_client" value="${escapeAttr(p.client||'')}"></div>
-    <div class="form-group"><label>Address</label><input id="pf_address" value="${escapeAttr(p.address||'')}"></div>
+    <div class="form-row">
+    <div class="form-group"><label>Contractor (GC)</label><div style="display:flex;gap:6px;"><select id="pf_contractor" style="flex:1;">${'<option value="">(none)</option>'+active('contractors').map(c=>`<option value="${c.id}" ${c.id===p.contractorId?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select><button class="btn btn-small btn-secondary" onclick="quickAddParty('contractors','pf_contractor')" title="Quick-add contractor">+</button></div>${p.contractorId&&byId('contractors',p.contractorId)?`<div class="help-text">${contactLinks(byId('contractors',p.contractorId),true)}</div>`:''}</div>
+    <div class="form-group"><label>Client</label><div style="display:flex;gap:6px;"><select id="pf_clientId" style="flex:1;">${'<option value="">(none)</option>'+active('clients').map(c=>`<option value="${c.id}" ${c.id===p.clientId?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}</select><button class="btn btn-small btn-secondary" onclick="quickAddParty('clients','pf_clientId')" title="Quick-add client">+</button></div>${p.clientId&&byId('clients',p.clientId)?`<div class="help-text">${contactLinks(byId('clients',p.clientId),false)}</div>`:''}</div>
+    </div>
+    ${p.client&&!p.contractorId&&!p.clientId?`<div class="help-text" style="margin-bottom:10px;">Previously entered as text: "${escapeHtml(p.client)}" — link a contractor/client above to upgrade this record.</div>`:''}
+    <div class="form-row"><div class="form-group"><label>Address</label><input id="pf_address" value="${escapeAttr(p.address||'')}"></div>
     <div class="form-group"><label>City, State, Zip</label><input id="pf_city" value="${escapeAttr(p.city||'')}"></div></div>
     <div class="form-row"><div class="form-group"><label>NTP Date</label><input type="date" id="pf_ntp" value="${p.ntpDate||''}"></div>
     <div class="form-group"><label>Start Date</label><input type="date" id="pf_start" value="${p.startDate||''}"></div>
@@ -446,7 +463,7 @@ function editProject(id){
 function saveProject(id,isNew){
   const name=document.getElementById('pf_name').value.trim();
   if(!name){alert('Project name is required.');return;}
-  const patch={name,number:document.getElementById('pf_number').value.trim(),client:document.getElementById('pf_client').value.trim(),address:document.getElementById('pf_address').value.trim(),city:document.getElementById('pf_city').value.trim(),status:document.getElementById('pf_status').value,ntpDate:document.getElementById('pf_ntp').value,startDate:document.getElementById('pf_start').value,completionDate:document.getElementById('pf_completion').value,specSections:parseTags(document.getElementById('pf_specs').value)};
+  const patch={name,number:document.getElementById('pf_number').value.trim(),contractorId:document.getElementById('pf_contractor').value||null,clientId:document.getElementById('pf_clientId').value||null,address:document.getElementById('pf_address').value.trim(),city:document.getElementById('pf_city').value.trim(),status:document.getElementById('pf_status').value,ntpDate:document.getElementById('pf_ntp').value,startDate:document.getElementById('pf_start').value,completionDate:document.getElementById('pf_completion').value,specSections:parseTags(document.getElementById('pf_specs').value)}; /* legacy p.client text is left untouched */
   if(isNew)createDoc('projects',{id,notes:[],archived:false,...patch});else patchDoc('projects',id,patch);
   closeModal();render();
 }
@@ -522,6 +539,75 @@ function saveRfi(id,isNew){
   const patch={projectId,subject,number:document.getElementById('rf_number').value.trim(),status:document.getElementById('rf_status').value,dateSent:document.getElementById('rf_sent').value,dateNeeded:document.getElementById('rf_needed').value};
   if(isNew)createDoc('rfis',{id,notes:[],archived:false,...patch});else patchDoc('rfis',id,patch);
   closeModal();render();
+}
+
+/* ---------------- contractors & clients ---------------- */
+function partyView(coll,label,isContractor){
+  const q=(window['_q_'+coll]||'').toLowerCase();
+  const list=STATE[coll].filter(x=>(SHOW_ARCHIVED||!x.archived)&&(!q||(x.name+(x.contact||'')+(x.email||'')+(x.phone||'')+(x.address||'')+(x.city||'')+(x.website||'')).toLowerCase().includes(q)));
+  return `<div class="card"><h2>${label}s <span class="count">${list.length} shown</span></h2>
+  <div class="toolbar"><button class="btn" onclick="editParty('${coll}',null)">+ New ${label}</button>
+  <input type="search" placeholder="Search ${label.toLowerCase()}s..." value="${escapeAttr(window['_q_'+coll]||'')}" oninput="window['_q_${coll}']=this.value;render()">
+  <label style="font-size:12px;color:var(--muted);"><input type="checkbox" ${SHOW_ARCHIVED?'checked':''} onchange="SHOW_ARCHIVED=this.checked;render()"> show archived</label></div>
+  ${list.length===0?`<div class="empty-state">No ${label.toLowerCase()}s yet.</div>`:`<table><thead><tr><th>Name</th><th>Contact</th><th>Phone / Email${isContractor?' / Website':''}</th><th>Address</th><th class="center">Projects</th><th></th></tr></thead><tbody>
+  ${list.map(x=>{const pc=active('projects').filter(p=>isContractor?p.contractorId===x.id:p.clientId===x.id).length;
+  return `<tr style="${x.archived?'opacity:0.5;':''}"><td><strong>${escapeHtml(x.name)}</strong></td><td>${escapeHtml(x.contact||'')}</td><td>${contactLinks(x,isContractor)}</td><td style="font-size:12px;">${escapeHtml(x.address||'')}${x.city?'<br>'+escapeHtml(x.city):''}</td><td class="center">${pc}</td><td><button class="btn btn-small" onclick="editParty('${coll}','${x.id}')">Open</button></td></tr>`;}).join('')}</tbody></table>`}</div>`;
+}
+VIEWS.contractors=()=>partyView('contractors','Contractor',true);
+VIEWS.clients=()=>partyView('clients','Client',false);
+function editParty(coll,id){
+  const isContractor=coll==='contractors';const label=isContractor?'Contractor':'Client';const isNew=!id;
+  const x=isNew?{id:uid(),name:'',contact:'',phone:'',email:'',address:'',city:'',website:'',notes:[],archived:false}:byId(coll,id);
+  if(!x)return;
+  const projs=isNew?[]:active('projects').filter(p=>isContractor?p.contractorId===x.id:p.clientId===x.id);
+  openModal(isNew?'New '+label:label+' — '+x.name,`
+    <div class="form-row"><div class="form-group"><label>${isContractor?'Company Name':'Client Name'} *</label><input id="yf_name" value="${escapeAttr(x.name)}"></div>
+    <div class="form-group"><label>Contact Person</label><input id="yf_contact" value="${escapeAttr(x.contact||'')}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Phone</label><input id="yf_phone" value="${escapeAttr(x.phone||'')}"></div>
+    <div class="form-group"><label>Email</label><input id="yf_email" value="${escapeAttr(x.email||'')}"></div>
+    ${isContractor?`<div class="form-group"><label>Website</label><input id="yf_website" value="${escapeAttr(x.website||'')}" placeholder="company.com"></div>`:''}</div>
+    <div class="form-row"><div class="form-group"><label>Address</label><input id="yf_address" value="${escapeAttr(x.address||'')}"></div>
+    <div class="form-group"><label>City, State, Zip</label><input id="yf_city" value="${escapeAttr(x.city||'')}"></div></div>
+    ${isNew?'':`
+    <h3 style="margin:14px 0 6px 0;font-size:13px;color:var(--brand-light);text-transform:uppercase;">Projects (${projs.length})</h3>
+    ${projs.length===0?'<div class="help-text">No linked projects.</div>':`<table><thead><tr><th>Project</th><th>Status</th><th></th></tr></thead><tbody>${projs.map(p=>`<tr><td>${escapeHtml(p.name)}</td><td>${statusBadge(p.status)}</td><td><button class="btn btn-small" onclick="closeModal();editProject('${p.id}')">Open</button></td></tr>`).join('')}</tbody></table>`}
+    ${notesBlock(coll,x.id)}`}`,
+    `${isNew?'':`<button class="btn btn-secondary" onclick="archiveDoc('${coll}','${x.id}',${!x.archived})">${x.archived?'Unarchive':'Archive'}</button>`}
+    <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+    <button class="btn" onclick="saveParty('${coll}','${x.id}',${isNew})">Save</button>`);
+}
+function saveParty(coll,id,isNew){
+  const name=document.getElementById('yf_name').value.trim();
+  if(!name){alert('Name is required.');return;}
+  const patch={name,contact:document.getElementById('yf_contact').value.trim(),phone:document.getElementById('yf_phone').value.trim(),email:document.getElementById('yf_email').value.trim(),address:document.getElementById('yf_address').value.trim(),city:document.getElementById('yf_city').value.trim()};
+  const site=document.getElementById('yf_website');if(site)patch.website=site.value.trim();
+  if(isNew)createDoc(coll,{id,notes:[],archived:false,...patch});else patchDoc(coll,id,patch);
+  closeModal();render();
+}
+function quickAddParty(coll,selId){
+  const label=coll==='contractors'?'contractor':'client';
+  const name=prompt('New '+label+' name (fill in contact details later in the '+(coll==='contractors'?'Contractors':'Clients')+' tab):');
+  if(!name||!name.trim())return;
+  const id=uid();
+  createDoc(coll,{id,name:name.trim(),contact:'',phone:'',email:'',address:'',city:'',...(coll==='contractors'?{website:''}:{}),notes:[],archived:false});
+  const sel=document.getElementById(selId);if(sel){const o=document.createElement('option');o.value=id;o.textContent=name.trim();sel.appendChild(o);sel.value=id;}
+}
+
+/* ---------------- global search ---------------- */
+function globalSearch(qRaw){
+  const q=String(qRaw||'').trim().toLowerCase();
+  if(!q){alert('Type something to search.');return;}
+  const hit=s=>String(s||'').toLowerCase().includes(q);
+  const pr=active('projects').filter(p=>hit(p.name)||hit(p.number)||hit(p.address)||hit(p.city)||hit((p.specSections||[]).join(' '))||hit(p.client)||hit(contractorName(p.contractorId))||hit(clientName(p.clientId)));
+  const co=active('contractors').filter(x=>hit(x.name)||hit(x.contact)||hit(x.email)||hit(x.phone)||hit(x.address)||hit(x.city)||hit(x.website));
+  const cl=active('clients').filter(x=>hit(x.name)||hit(x.contact)||hit(x.email)||hit(x.phone)||hit(x.address)||hit(x.city));
+  const total=pr.length+co.length+cl.length;
+  openModal(`Search — "${escapeHtml(qRaw.trim())}" (${total} result${total===1?'':'s'})`,
+    total===0?'<div class="empty-state">No matches across projects, contractors, or clients.</div>':`
+    ${pr.map(p=>`<a class="gres" onclick="closeModal();editProject('${p.id}')"><span class="kind">Project</span><strong>${escapeHtml(p.name)}</strong> ${statusBadge(p.status)} <span class="help-text">${escapeHtml(projParty(p))}</span></a>`).join('')}
+    ${co.map(x=>`<a class="gres" onclick="closeModal();editParty('contractors','${x.id}')"><span class="kind">Contractor</span><strong>${escapeHtml(x.name)}</strong> <span class="help-text">${escapeHtml(x.contact||'')} ${escapeHtml(x.phone||'')}</span></a>`).join('')}
+    ${cl.map(x=>`<a class="gres" onclick="closeModal();editParty('clients','${x.id}')"><span class="kind">Client</span><strong>${escapeHtml(x.name)}</strong> <span class="help-text">${escapeHtml(x.contact||'')} ${escapeHtml(x.phone||'')}</span></a>`).join('')}`,
+    '<button class="btn btn-secondary" onclick="closeModal()">Close</button>');
 }
 
 /* ---------------- estimates ---------------- */
