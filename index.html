@@ -22,6 +22,9 @@
     --ok:#3FA34D;
     --hold:#E8A317;
   }
+  body.light{--bg:#F2F2F2;--panel:#FFFFFF;--panel-2:#ECECEC;--line:#CFCFCF;--text:#1C1C1C;--muted:#666666;}
+  body.light .st-Bidding,body.light .sub-InPrep,body.light .pay-Partial{color:#3A5F85;border-color:#3A5F85;}
+  body.light .st-Lost,body.light .est-Declined{color:#888;border-color:#999;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);max-width:100%;overflow-x:hidden;}
   header{background:var(--panel);border-bottom:3px solid var(--brand);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
@@ -155,9 +158,12 @@
     table{min-width:560px;} /* tables scroll inside their card instead of stretching the page */
     .totals-box{max-width:none;}
   }
+  .print-only{display:none;}
   @media print{
     body{background:#fff;color:#000;}
     header,nav.tabs,.toolbar,button,.no-print{display:none !important;}
+    body.est-print main>.card{display:none !important;}
+    body.est-print #estimatePrint{display:block !important;background:#fff;color:#000;border:none;padding:0;overflow:visible;}
     main{padding:0;max-width:none;}
     .card{border:none;background:#fff;color:#000;page-break-inside:avoid;}
     .card h2{color:#1F4E78;border-bottom-color:#1F4E78;}
@@ -182,6 +188,7 @@
   <div><h1>Visionary Advancement <span id="modePill" class="mode-pill">LOCAL MODE</span></h1><div class="sub">Project Tracking CRM</div></div>
   <div>
     <span id="userEmailLbl" class="help-text" style="margin-right:10px;"></span>
+    <button class="btn btn-secondary" onclick="toggleTheme()" title="Switch light / dark mode">&#9681; Theme</button>
     <button class="btn btn-secondary" onclick="exportData()">Backup</button>
     <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Import</button>
     <button class="btn btn-secondary" id="logoutBtn" style="display:none;" onclick="doLogout()">Sign Out</button>
@@ -228,6 +235,10 @@ const FIREBASE_CONFIG = {
 };
 
 const LS_KEY='va.crm.fw.v1';
+const COMPANY={name:'Visionary Advancement',tagline:'Bringing Your Imagination to Life',phone:'951-836-6522',email:'aaron.visionadv@outlook.com',zelle:'951-836-6522',logo:'logo.png'};
+/* theme */
+function toggleTheme(){document.body.classList.toggle('light');try{localStorage.setItem('va.crm.theme',document.body.classList.contains('light')?'light':'dark');}catch(e){}}
+try{if(localStorage.getItem('va.crm.theme')==='light')document.body.classList.add('light');}catch(e){}
 const COLLS=['projects','submittals','rfis','estimates','rates','oneoffs','contractors','clients'];
 const PROJECT_STATUSES=['Bidding','Awarded','In Progress','Closeout','Complete','On Hold','Lost'];
 const TERMINAL_PROJECT=['Complete','Lost'];
@@ -654,7 +665,7 @@ VIEWS.estimateBuilder=()=>{
   <div class="card"><h2>Estimate ${escapeHtml(e.number||'')} <span class="count">${escapeHtml(projName(e.projectId))}</span></h2>
     <div class="toolbar"><button class="btn btn-secondary" onclick="showView('estimates')">&larr; All Estimates</button>
     <button class="btn btn-secondary" onclick="duplicateEstimate('${e.id}')">Duplicate</button>
-    <button class="btn btn-secondary" onclick="window.print()">Print</button>
+    <button class="btn btn-secondary" onclick="printEstimate()">Print / PDF</button>
     <button class="btn btn-secondary" onclick="archiveDoc('estimates','${e.id}',${!e.archived});showView('estimates')">${e.archived?'Unarchive':'Archive'}</button></div>
     <div class="form-row">
       <div class="form-group"><label>Estimate #</label><input id="ef_number" value="${escapeAttr(e.number||'')}" onchange="persistEstimateHeader()"></div>
@@ -692,8 +703,53 @@ VIEWS.estimateBuilder=()=>{
     </div>
     <div id="payList"></div>
   </div>
-  <div class="card">${notesBlock('estimates',e.id)}</div>`;
+  <div class="card">${notesBlock('estimates',e.id)}</div>
+  <div class="card print-only" id="estimatePrint"></div>`;
 };
+/* Client-facing printout: logo + phone/email header, description & amount
+   only (no status / qty / rates), Zelle box, notes framed without stamps. */
+function buildPrintBlock(){
+  if(CURRENT_VIEW!=='estimateBuilder')return;
+  const e=byId('estimates',CURRENT_ESTIMATE_ID);const wrap=document.getElementById('estimatePrint');
+  if(!e||!wrap)return;
+  const p=byId('projects',e.projectId);
+  const gc=p?byId('contractors',p.contractorId):null;
+  const cl=p?byId('clients',p.clientId):null;
+  const partyBlock=(x,title)=>x?`<td style="border:none;vertical-align:top;padding:0 20px 0 0;"><div style="font-size:11px;font-weight:bold;color:#1F4E78;text-transform:uppercase;">${title}</div><div style="font-size:13px;"><strong>${escapeHtml(x.name)}</strong>${x.contact?'<br>'+escapeHtml(x.contact):''}${x.phone?'<br>'+escapeHtml(x.phone):''}${x.email?'<br>'+escapeHtml(x.email):''}</div></td>`:'';
+  const total=estTotal(e),paid=paidAmount(e),bal=total-paid,sav=Number(e.savings)||0;
+  const notes=(e.notes||[]).map(n=>escapeHtml(n.text));
+  wrap.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1F4E78;padding-bottom:14px;margin-bottom:16px;">
+    <div>
+      <img src="${COMPANY.logo}" alt="${escapeAttr(COMPANY.name)}" style="width:300px;max-width:55vw;height:auto;" onerror="this.style.display='none';document.getElementById('logoFallback').style.display='block';">
+      <div id="logoFallback" style="display:none;"><div style="font-size:20px;font-weight:bold;color:#1F4E78;">${escapeHtml(COMPANY.name)}</div><div style="font-size:12px;color:#000;">${escapeHtml(COMPANY.phone)} &bull; ${escapeHtml(COMPANY.email)}</div></div>
+    </div>
+    <div style="text-align:right;color:#000;"><div style="font-size:24px;font-weight:bold;color:#1F4E78;">ESTIMATE</div>
+    <div style="font-size:13px;"><strong>#</strong> ${escapeHtml(e.number||'')}</div>
+    <div style="font-size:13px;"><strong>Date:</strong> ${fmtDate(e.date)}</div></div>
+  </div>
+  <table style="border:none;margin-bottom:16px;"><tr style="background:transparent;">
+    ${partyBlock(gc,'Prepared For (Contractor)')}${partyBlock(cl,'Client')}
+    <td style="border:none;vertical-align:top;padding:0;"><div style="font-size:11px;font-weight:bold;color:#1F4E78;text-transform:uppercase;">Project</div><div style="font-size:13px;"><strong>${escapeHtml(p?.name||'')}</strong>${p?.address?'<br>'+escapeHtml(p.address):''}${p?.city?'<br>'+escapeHtml(p.city):''}</div></td>
+  </tr></table>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
+    <thead><tr><th style="background:#1F4E78;color:#fff;padding:8px;text-align:left;font-size:12px;">DESCRIPTION</th><th style="background:#1F4E78;color:#fff;padding:8px;text-align:right;font-size:12px;width:130px;">AMOUNT</th></tr></thead>
+    <tbody>${(e.lineItems||[]).map(l=>`<tr><td style="padding:7px 8px;border-bottom:1px solid #ddd;font-size:13px;color:#000;">${escapeHtml(l.desc)}</td><td style="padding:7px 8px;border-bottom:1px solid #ddd;text-align:right;font-size:13px;color:#000;">${fmtMoney((l.qty||0)*(l.rate||0))}</td></tr>`).join('')}</tbody>
+  </table>
+  <div style="max-width:320px;margin-left:auto;font-size:13px;color:#000;">
+    <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Subtotal</span><span>${fmtMoney(estSubtotal(e))}</span></div>
+    ${sav?`<div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Discount</span><span>&minus;${fmtMoney(sav)}</span></div>`:''}
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:2px solid #1F4E78;font-weight:bold;font-size:16px;color:#1F4E78;"><span>Total</span><span>${fmtMoney(total)}</span></div>
+    ${paid>0?`<div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Paid to Date</span><span>${fmtMoney(paid)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:3px 0;font-weight:bold;"><span>Balance Due</span><span>${fmtMoney(bal)}</span></div>`:''}
+  </div>
+  <div style="border:2px solid #1F4E78;border-radius:6px;padding:10px 14px;margin-top:18px;font-size:13px;color:#000;"><strong style="color:#1F4E78;">Payment:</strong> Zelle &mdash; ${escapeHtml(COMPANY.zelle)}</div>
+  ${notes.length?`<div style="border:1px solid #999;border-radius:6px;padding:10px 14px;margin-top:14px;color:#000;"><div style="font-size:11px;font-weight:bold;color:#1F4E78;text-transform:uppercase;margin-bottom:6px;">Notes</div>${notes.map(t=>`<div style="font-size:13px;padding:2px 0;white-space:pre-wrap;">${t}</div>`).join('')}</div>`:''}
+  <p style="font-size:10px;font-style:italic;margin-top:20px;color:#000;">Above information is not an invoice and is only an estimate of services described. Payment is collected prior to provision of services.</p>`;
+}
+function printEstimate(){buildPrintBlock();document.body.classList.add('est-print');window.print();}
+window.addEventListener('beforeprint',()=>{if(CURRENT_VIEW==='estimateBuilder'){buildPrintBlock();document.body.classList.add('est-print');}});
+window.addEventListener('afterprint',()=>document.body.classList.remove('est-print'));
 POST.estimateBuilder=()=>{rerenderLineItems();renderPayList();};
 let _liT=null;
 function persistLineItems(){const e=byId('estimates',CURRENT_ESTIMATE_ID);if(!e)return;clearTimeout(_liT);_liT=setTimeout(()=>patchDoc('estimates',e.id,{lineItems:e.lineItems,savings:e.savings}),400);}
