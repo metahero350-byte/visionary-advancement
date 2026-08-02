@@ -402,12 +402,22 @@ function toggleCard(el){el.closest('.collapsible').classList.toggle('closed');}
 function statusBadge(s){return `<span class="badge st-${slug(s)}">${escapeHtml(s||'Bidding')}</span>`;}
 function subBadge(s){return `<span class="badge sub-${slug(s)}">${escapeHtml(s||'Not Started')}</span>`;}
 function rfiBadge(s){return `<span class="badge rfi-${slug(s)}">${escapeHtml(s||'Open')}</span>`;}
-function notesBlock(coll,id){const d=byId(coll,id);const notes=(d?.notes||[]).slice().sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));return `
+function notesListHtml(coll,id){const d=byId(coll,id);const notes=(d?.notes||[]).slice().sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));return notes.length===0?'<div class="help-text">No notes yet.</div>':notes.map(n=>`<div class="note-entry"><span class="stamp">${escapeHtml(n.ts)}</span>${escapeHtml(n.text)}</div>`).join('');}
+function notesBlock(coll,id){return `
   <h3 style="margin:16px 0 6px 0;font-size:13px;color:var(--brand-light);text-transform:uppercase;">General Notes</h3>
-  <div class="form-row"><div class="form-group" style="flex:3;"><textarea id="newNote_${id}" placeholder="Add a note — stamped and permanent once saved"></textarea></div>
+  <div class="form-row"><div class="form-group" style="flex:3;"><textarea id="newNote_${id}" placeholder="Add a note — stamped and permanent once saved. Saves on its own, separate from the form."></textarea></div>
   <div class="form-group" style="flex:0 0 auto;align-self:flex-end;"><button class="btn" onclick="saveNote('${coll}','${id}')">Add Note</button></div></div>
-  <div id="noteList_${id}">${notes.length===0?'<div class="help-text">No notes yet.</div>':notes.map(n=>`<div class="note-entry"><span class="stamp">${escapeHtml(n.ts)}</span>${escapeHtml(n.text)}</div>`).join('')}</div>`;}
-function saveNote(coll,id){const el=document.getElementById('newNote_'+id);const text=(el?.value||'').trim();if(!text){alert('Note is empty.');return;}appendNote(coll,id,text);if(coll==='contractors'||coll==='clients'){editParty(coll,id);return;}if(coll==='estimates'){render();return;}const map={projects:'editProject',submittals:'editSubmittal',rfis:'editRfi'};window[map[coll]](id);}
+  <div id="noteList_${id}">${notesListHtml(coll,id)}</div>`;}
+function saveNote(coll,id){
+  const el=document.getElementById('newNote_'+id);const text=(el?.value||'').trim();
+  if(!text){alert('Note is empty.');return;}
+  appendNote(coll,id,text);
+  /* Notes save independently: refresh ONLY the notes list so unsaved
+     form fields (spec sections, dates, etc.) are never erased. */
+  const list=document.getElementById('noteList_'+id);
+  if(list)list.innerHTML=notesListHtml(coll,id);
+  if(el)el.value='';
+}
 
 /* ---------------- dashboard ---------------- */
 VIEWS.dashboard=()=>{
