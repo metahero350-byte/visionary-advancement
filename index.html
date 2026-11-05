@@ -183,6 +183,7 @@
   <div class="form-group"><label>Password</label><input id="authPass" type="password" autocomplete="current-password"></div>
   <div id="authErr"></div>
   <button class="btn" style="width:100%;margin-top:10px;" onclick="doLogin()">Sign In</button>
+  <div style="text-align:center;margin-top:12px;"><a onclick="doPasswordReset()" style="color:var(--brand-light);font-size:12px;cursor:pointer;text-decoration:underline;">Forgot password? Email me a reset link</a></div>
 </div></div>
 <header>
   <div><h1>Visionary Advancement <span id="modePill" class="mode-pill">LOCAL MODE</span></h1><div class="sub">Project Tracking CRM</div></div>
@@ -199,7 +200,6 @@
   <button data-view="dashboard" class="active" onclick="showView('dashboard',this)">Dashboard</button>
   <button data-view="projects" onclick="showView('projects',this)">Projects</button>
   <button data-view="contractors" onclick="showView('contractors',this)">Contractors</button>
-  <button data-view="inquiries" onclick="showView('inquiries',this)">Inquiries <span id="inqBadge" class="count"></span></button>
   <button data-view="clients" onclick="showView('clients',this)">Clients</button>
   <button data-view="submittals" onclick="showView('submittals',this)">Submittals</button>
   <button data-view="rfis" onclick="showView('rfis',this)">RFIs</button>
@@ -240,7 +240,7 @@ const COMPANY={name:'Visionary Advancement',tagline:'Bringing Your Imagination t
 /* theme */
 function toggleTheme(){document.body.classList.toggle('light');try{localStorage.setItem('va.crm.theme',document.body.classList.contains('light')?'light':'dark');}catch(e){}}
 try{if(localStorage.getItem('va.crm.theme')==='light')document.body.classList.add('light');}catch(e){}
-const COLLS=['projects','submittals','rfis','estimates','rates','oneoffs','contractors','clients','inquiries'];
+const COLLS=['projects','submittals','rfis','estimates','rates','oneoffs','contractors','clients'];
 const PROJECT_STATUSES=['Bidding','Awarded','In Progress','Closeout','Complete','On Hold','Lost'];
 const TERMINAL_PROJECT=['Complete','Lost'];
 const SUB_STAGES=['Product Data','Shop Drawings','Closeouts'];
@@ -248,7 +248,8 @@ const SUB_STATUSES=['Not Started','In Prep','Submitted','Revise & Resubmit','App
 const SUB_TERMINAL=['Approved','Approved as Noted'];
 const RFI_STATUSES=['Open','Answered','Void'];
 const EST_STATUSES=['Draft','Sent','Approved','Declined','Revised'];
-const RATE_SECTIONS=[{key:'architectural',label:'Architectural'},{key:'fire_alarm',label:'Fire Alarm'},{key:'other_systems',label:'Other Systems (Low-Voltage)'},{key:'waterproofing',label:'Waterproofing / Details'}];
+/* Sections with after:true show AFTER the One-Off Library tab in the estimate builder */
+const RATE_SECTIONS=[{key:'architectural',label:'Architectural'},{key:'fire_alarm',label:'Fire Alarm'},{key:'other_systems',label:'Other Systems (Low-Voltage)'},{key:'waterproofing',label:'Waterproofing / Details'},{key:'cup',label:'CUP (Conditional Use Permit)',after:true},{key:'web_dev',label:'Website Development',after:true}];
 const DEFAULT_RATES=[
  {id:'rt_arch_01',section:'architectural',desc:'Residential - New Construction',rate:1.25,unit:'$/sq ft'},
  {id:'rt_arch_02',section:'architectural',desc:'Commercial - Tenant Improvement',rate:2.00,unit:'$/sq ft'},
@@ -281,7 +282,23 @@ const DEFAULT_RATES=[
  {id:'rt_wp_02',section:'waterproofing',desc:'Update medium changes to detail',rate:25,unit:'each'},
  {id:'rt_wp_03',section:'waterproofing',desc:'New detail design from sketch',rate:36,unit:'each'},
  {id:'rt_wp_04',section:'waterproofing',desc:'Reproduction of existing detail',rate:36,unit:'each'},
- {id:'rt_wp_05',section:'waterproofing',desc:'Specification writing',rate:40,unit:'each'}
+ {id:'rt_wp_05',section:'waterproofing',desc:'Specification writing',rate:40,unit:'each'},
+ {id:'rt_cup_01',section:'cup',desc:'Subject Property Verification',rate:80,unit:'flat'},
+ {id:'rt_cup_02',section:'cup',desc:'500-Foot Resident Address Research',rate:250,unit:'flat'},
+ {id:'rt_cup_03',section:'cup',desc:'600-Foot Sensitive-Use Research',rate:250,unit:'flat'},
+ {id:'rt_cup_04',section:'cup',desc:'Custom Radius Map',rate:250,unit:'flat'},
+ {id:'rt_cup_05',section:'cup',desc:'CUP Supporting Exhibit',rate:175,unit:'flat'},
+ {id:'rt_cup_06',section:'cup',desc:'Quality Control and Revisions',rate:125,unit:'flat'},
+ {id:'rt_cup_07',section:'cup',desc:'500-Foot ABC-Licensed Premises Search',rate:200,unit:'flat'},
+ {id:'rt_web_01',section:'web_dev',desc:'Single-Page Website (Landing Page)',rate:500,unit:'flat'},
+ {id:'rt_web_02',section:'web_dev',desc:'Multi-Page Website (up to 5 pages)',rate:1200,unit:'flat'},
+ {id:'rt_web_03',section:'web_dev',desc:'Additional Pages',rate:150,unit:'each'},
+ {id:'rt_web_04',section:'web_dev',desc:'E-Commerce / Online Store Setup',rate:800,unit:'flat'},
+ {id:'rt_web_05',section:'web_dev',desc:'Domain, Hosting & Email Setup',rate:125,unit:'flat'},
+ {id:'rt_web_06',section:'web_dev',desc:'Logo / Branding Graphics',rate:150,unit:'each'},
+ {id:'rt_web_07',section:'web_dev',desc:'Basic SEO Setup',rate:250,unit:'flat'},
+ {id:'rt_web_08',section:'web_dev',desc:'Content Updates / Maintenance (hourly)',rate:75,unit:'$/hour'},
+ {id:'rt_web_09',section:'web_dev',desc:'Revisions (hourly)',rate:45,unit:'$/hour'}
 ];
 const DEFAULT_ONEOFFS=[
  {id:'oo_01',desc:'Permit submittal coordination',amount:250},
@@ -291,7 +308,7 @@ const DEFAULT_ONEOFFS=[
  {id:'oo_05',desc:'Expedited drawing fee',amount:400}
 ];
 
-let STATE={projects:[],submittals:[],rfis:[],estimates:[],rates:[],oneoffs:[],contractors:[],clients:[],inquiries:[]};
+let STATE={projects:[],submittals:[],rfis:[],estimates:[],rates:[],oneoffs:[],contractors:[],clients:[]};
 let FB=null; let CURRENT_VIEW='dashboard'; let SHOW_ARCHIVED=false; let CURRENT_ESTIMATE_ID=null;
 
 function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);}
@@ -324,9 +341,11 @@ function createDoc(coll,doc){doc.created=doc.created||todayISO();STATE[coll].pus
 function patchDoc(coll,id,patch){const d=byId(coll,id);if(!d)return;Object.assign(d,patch,{updated:todayISO()});if(FB){FB.db.collection(coll).doc(id).update({...patch,updated:todayISO()}).catch(fbErr);}else{lsSave();}}
 function appendNote(coll,id,text){const d=byId(coll,id);if(!d)return;const note={ts:stamp(),text};if(!Array.isArray(d.notes))d.notes=[];d.notes.push(note);if(FB){FB.db.collection(coll).doc(id).update({notes:firebase.firestore.FieldValue.arrayUnion(note)}).catch(fbErr);}else{lsSave();}}
 function fbErr(e){console.error(e);alert('Cloud write failed: '+e.message+'\nChange is held locally — retry or check connection.');}
-function seedDefaults(){ /* idempotent — stable IDs, only fills empty collections */
-  if(STATE.rates.length===0)DEFAULT_RATES.forEach(r=>createDoc('rates',{...r,archived:false}));
-  if(STATE.oneoffs.length===0)DEFAULT_ONEOFFS.forEach(o=>createDoc('oneoffs',{...o,archived:false}));
+function seedDefaults(){ /* idempotent — stable IDs; fills any MISSING default items,
+   so new rate sections (CUP, Website Development) appear in existing
+   deployments without touching records that already exist. */
+  DEFAULT_RATES.forEach(r=>{if(!byId('rates',r.id))createDoc('rates',{...r,archived:false});});
+  DEFAULT_ONEOFFS.forEach(o=>{if(!byId('oneoffs',o.id))createDoc('oneoffs',{...o,archived:false});});
 }
 
 /* ---------------- estimate financials ---------------- */
@@ -359,12 +378,22 @@ async function initBackend(){
       document.getElementById('logoutBtn').style.display='';
       document.getElementById('userEmailLbl').textContent=user.email||'';
       COLLS.forEach(c=>FB.db.collection(c).onSnapshot(snap=>{STATE[c]=snap.docs.map(d=>d.data());lsSave();safeRender();},fbErr));
-      FB.db.collection('rates').get().then(s=>{if(s.empty)seedDefaults();}).catch(()=>{});
+      /* seed any missing default rate/one-off items once current data is in hand */
+      Promise.all([FB.db.collection('rates').get(),FB.db.collection('oneoffs').get()]).then(([r,o])=>{STATE.rates=r.docs.map(d=>d.data());STATE.oneoffs=o.docs.map(d=>d.data());seedDefaults();}).catch(()=>{});
     });
-  }catch(e){console.error(e);alert('Firebase failed to load — running in LOCAL MODE.\n'+e.message);FB=null;lsLoad();render();}
+  }catch(e){console.error(e);alert('Firebase failed to load — running in LOCAL MODE.\n'+e.message);FB=null;lsLoad();seedDefaults();render();}
 }
 function doLogin(){if(!FB)return;const em=document.getElementById('authEmail').value.trim();const pw=document.getElementById('authPass').value;FB.auth.signInWithEmailAndPassword(em,pw).catch(e=>{document.getElementById('authErr').textContent=e.message;});}
 function doLogout(){if(FB)FB.auth.signOut();}
+function doPasswordReset(){
+  if(!FB)return;
+  const em=document.getElementById('authEmail').value.trim();
+  const err=document.getElementById('authErr');
+  if(!em){err.textContent='Type your email address above first, then tap the reset link.';return;}
+  FB.auth.sendPasswordResetEmail(em)
+    .then(()=>{err.style.color='var(--ok)';err.textContent='Reset email sent to '+em+' — check your inbox (and spam). Follow the link, set a new password, then sign in here.';})
+    .catch(e=>{err.style.color='var(--alert)';err.textContent=e.message;});
+}
 
 /* ---------------- overdue flag engine (§5) ---------------- */
 function computeFlags(){
@@ -396,7 +425,7 @@ function isTyping(){const a=document.activeElement;return !!a&&(a.tagName==='INP
 function safeRender(){if(isTyping()){PENDING_RENDER=true;return;}render();}
 document.addEventListener('focusout',()=>{setTimeout(()=>{if(PENDING_RENDER&&!isTyping()){PENDING_RENDER=false;render();}},180);});
 function showView(name,btn){CURRENT_VIEW=name;document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));(btn||document.querySelector(`nav.tabs button[data-view="${name}"]`))?.classList.add('active');render();}
-function render(){const fn=VIEWS[CURRENT_VIEW];document.getElementById('main').innerHTML=fn?fn():'';if(POST[CURRENT_VIEW])POST[CURRENT_VIEW]();if(typeof inqBadge==='function')inqBadge();}
+function render(){const fn=VIEWS[CURRENT_VIEW];document.getElementById('main').innerHTML=fn?fn():'';if(POST[CURRENT_VIEW])POST[CURRENT_VIEW]();}
 function openModal(t,b,f){document.getElementById('modalTitle').textContent=t;document.getElementById('modalBody').innerHTML=b;document.getElementById('modalFooter').innerHTML=f||'';document.getElementById('modal').classList.add('open');}
 function closeModal(){document.getElementById('modal').classList.remove('open');}
 function toggleCard(el){el.closest('.collapsible').classList.toggle('closed');}
@@ -430,7 +459,6 @@ VIEWS.dashboard=()=>{
   return `
   <div class="card"><h2>Dashboard</h2>
     <div class="summary-grid">
-      <div class="summary-tile ${active('inquiries').filter(i=>i.status==='new').length?'alert':''}" style="cursor:pointer" onclick="showView('inquiries')"><div class="label">New Inquiries</div><div class="value">${active('inquiries').filter(i=>i.status==='new').length}</div></div>
       <div class="summary-tile"><div class="label">Open Projects</div><div class="value">${open.length}</div></div>
       <div class="summary-tile"><div class="label">Open Submittals</div><div class="value">${openSubs.length}</div></div>
       <div class="summary-tile"><div class="label">Open RFIs</div><div class="value">${openRfis.length}</div></div>
@@ -599,41 +627,6 @@ function partyView(coll,label,isContractor){
 }
 VIEWS.contractors=()=>partyView('contractors','Contractor',true);
 VIEWS.clients=()=>partyView('clients','Client',false);
-/* ---------------- Inquiries (from aaronduchane.com Connect form) ----------------
-   Website writes new docs (status 'new'); everything else here is admin-only. */
-function inqBadge(){const n=active('inquiries').filter(i=>i.status==='new').length;const b=document.getElementById('inqBadge');if(b)b.textContent=n?n:'';}
-VIEWS.inquiries=()=>{
-  const f=window._inqFilter||'open';
-  const all=STATE.inquiries.filter(i=>SHOW_ARCHIVED||!i.archived).sort((a,b)=>(b.createdAt||b.created||'').localeCompare(a.createdAt||a.created||''));
-  const list=all.filter(i=>f==='all'?true:f==='open'?(i.status||'new')!=='handled'&&i.status!=='converted':(i.status||'new')===f);
-  const sel=(v,t)=>`<option value="${v}" ${f===v?'selected':''}>${t}</option>`;
-  return `<div class="card"><h2>Inquiries <span class="count">${list.length} shown</span></h2>
-  <div class="toolbar"><select onchange="window._inqFilter=this.value;render()">${sel('open','Open')}${sel('new','New only')}${sel('handled','Handled')}${sel('converted','Converted')}${sel('all','All')}</select>
-  <span style="font-size:12px;color:var(--muted);">From the Connect form on aaronduchane.com (Building topic). A copy also goes to your email.</span></div>
-  ${list.length===0?`<div class="empty-state">No inquiries here yet.</div>`:list.map(i=>{const st=i.status||'new';
-    return `<div class="card" style="margin:12px 0;${st==='new'?'border-color:var(--brand);':''}">
-    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;"><div><strong style="font-size:15px;">${escapeHtml(i.name||'(no name)')}</strong> <span class="badge">${escapeHtml(st)}</span><br>
-    <span style="font-size:12px;color:var(--muted);">${escapeHtml(i.topic||'')} · ${escapeHtml((i.createdAt||i.created||'').slice(0,16).replace('T',' '))} · prefers ${escapeHtml(i.contact||'Email')}</span></div>
-    <div style="font-size:13px;">${i.email?`<a href="mailto:${escapeAttr(i.email)}">${escapeHtml(i.email)}</a>`:''}${i.phone?`<br><a href="tel:${escapeAttr(i.phone)}">${escapeHtml(i.phone)}</a>`:''}</div></div>
-    <p style="white-space:pre-wrap;margin:10px 0;">${escapeHtml(i.message||'')}</p>
-    <div class="toolbar" style="margin:0;">
-      ${st!=='converted'?`<button class="btn btn-small" onclick="convertInquiry('${i.id}')">Convert to Client</button>`:`<span style="font-size:12px;color:var(--muted);">Client created</span>`}
-      ${st==='new'?`<button class="btn btn-small btn-secondary" onclick="patchDoc('inquiries','${i.id}',{status:'handled'});render()">Mark handled</button>`:''}
-      ${st==='handled'?`<button class="btn btn-small btn-secondary" onclick="patchDoc('inquiries','${i.id}',{status:'new'});render()">Reopen</button>`:''}
-      <button class="btn btn-small btn-secondary" onclick="if(confirm('Archive this inquiry?')){patchDoc('inquiries','${i.id}',{archived:true});render()}">Archive</button>
-    </div></div>`;}).join('')}</div>`;
-};
-POST.inquiries=inqBadge;
-function convertInquiry(id){
-  const i=byId('inquiries',id);if(!i)return;
-  const existing=active('clients').find(c=>(i.email&&(c.email||'').toLowerCase()===i.email.toLowerCase())||(i.phone&&(c.phone||'').replace(/\D/g,'').slice(-10)===String(i.phone).replace(/\D/g,'').slice(-10)&&String(i.phone).replace(/\D/g,'').length>=10));
-  let cid;
-  if(existing){cid=existing.id;appendNote('clients',cid,'Website inquiry: '+(i.message||''));}
-  else{cid=uid();createDoc('clients',{id:cid,name:i.name||i.email||'Website inquiry',contact:'',phone:i.phone||'',email:i.email||'',address:'',city:'',website:'',notes:[{ts:stamp(),text:'From aaronduchane.com ('+(i.topic||'Building')+'): '+(i.message||'')}],archived:false});}
-  patchDoc('inquiries',id,{status:'converted',clientId:cid});render();
-  alert(existing?'Matched existing client "'+existing.name+'" and added the message as a note.':'Client created. Open the Clients tab to add details or start a project.');
-}
-
 function editParty(coll,id){
   const isContractor=coll==='contractors';const label=isContractor?'Contractor':'Client';const isNew=!id;
   const x=isNew?{id:uid(),name:'',contact:'',phone:'',email:'',address:'',city:'',website:'',notes:[],archived:false}:byId(coll,id);
@@ -708,6 +701,8 @@ function openEstimate(id){CURRENT_ESTIMATE_ID=id;CURRENT_VIEW='estimateBuilder';
 VIEWS.estimateBuilder=()=>{
   const e=byId('estimates',CURRENT_ESTIMATE_ID);
   if(!e)return '<div class="card"><div class="empty-state">Estimate not found.</div></div>';
+  const preSections=RATE_SECTIONS.filter(s=>!s.after);
+  const postSections=RATE_SECTIONS.filter(s=>s.after);
   return `
   <div class="card"><h2>Estimate ${escapeHtml(e.number||'')} <span class="count">${escapeHtml(projName(e.projectId))}</span></h2>
     <div class="toolbar"><button class="btn btn-secondary" onclick="showView('estimates')">&larr; All Estimates</button>
@@ -722,7 +717,7 @@ VIEWS.estimateBuilder=()=>{
     </div>
   </div>
   <div class="card collapsible"><h2 onclick="toggleCard(this)">Add Scope from Rate Card</h2><div class="card-body">
-    <div class="tabs-mini">${RATE_SECTIONS.map((s,i)=>`<button class="${i===0?'active':''}" onclick="switchScopeTab(this,'${s.key}')">${s.label}</button>`).join('')}<button onclick="switchScopeTab(this,'oneoffs')">One-Off Library</button></div>
+    <div class="tabs-mini">${preSections.map((s,i)=>`<button class="${i===0?'active':''}" onclick="switchScopeTab(this,'${s.key}')">${s.label}</button>`).join('')}<button onclick="switchScopeTab(this,'oneoffs')">One-Off Library</button>${postSections.map(s=>`<button onclick="switchScopeTab(this,'${s.key}')">${s.label}</button>`).join('')}</div>
     ${RATE_SECTIONS.map((s,i)=>`<div id="scope_${s.key}" class="scope-pane" style="${i===0?'':'display:none;'}">${active('rates').filter(r=>r.section===s.key).map(r=>`<div class="scope-row"><label>${escapeHtml(r.desc)}</label><span class="rate">${fmtMoney(r.rate)} ${escapeHtml(r.unit)}</span><input type="number" min="0" step="any" placeholder="qty/hrs" id="qty_${r.id}"><button class="btn btn-small" onclick="addFromRate('${r.id}')">Add</button></div>`).join('')||'<div class="help-text">No rates in this section.</div>'}</div>`).join('')}
     <div id="scope_oneoffs" class="scope-pane" style="display:none;">${active('oneoffs').map(o=>`<div class="scope-row"><label>${escapeHtml(o.desc)}</label><span class="rate">${fmtMoney(o.amount)} flat</span><input type="number" min="1" step="1" value="1" id="oqty_${o.id}"><button class="btn btn-small" onclick="addFromOneOff('${o.id}')">Add</button></div>`).join('')||'<div class="help-text">One-off library is empty.</div>'}</div>
     <div style="margin-top:10px;"><button class="btn btn-secondary" onclick="addBlankLine()">+ Custom Line Item</button></div>
